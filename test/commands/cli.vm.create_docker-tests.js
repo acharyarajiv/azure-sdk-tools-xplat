@@ -24,12 +24,11 @@ var isForceMocked = !process.env.NOCK_OFF;
 var utils = require('../../lib/util/utils');
 var CLITest = require('../framework/cli-test');
 
-
 // A common VM used by multiple tests
 var vmToUse = {
-  Name: null,
-  Created: false,
-  Delete: false
+  Name : null,
+  Created : false,
+  Delete : false
 };
 
 var timeout = isForceMocked ? 0 : 12000;
@@ -42,7 +41,7 @@ var currentRandom = 0;
 describe('cli', function () {
   describe('vm', function () {
     var location = process.env.AZURE_VM_TEST_LOCATION || 'West US',
-        vmName = 'xplattestvm';
+    vmName;
     var dockerCertDir;
     var dockerCerts;
 
@@ -56,7 +55,7 @@ describe('cli', function () {
 
         utils.POLL_REQUEST_INTERVAL = 0;
       }
-
+      vmName = process.env.TEST_VM_NAME;
       suite.setupSuite(done);
     });
 
@@ -124,22 +123,19 @@ describe('cli', function () {
         getImageName('Linux', function (ImageName) {
           suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" --json --location %s --ssh',
             vmName, ImageName, location, function (result) {
-              suite.execute('vm show %s --json', vmName, function (result) {
-                var certifiatesExist = checkForDockerCertificates(dockerCertDir);
-                certifiatesExist.should.be.true;
-
-                var cratedVM = JSON.parse(result.text);
-                var dockerPortExists = checkForDockerPort(cratedVM, dockerPort);
-
-                dockerPortExists.should.be.true;
-                cratedVM.VMName.should.equal(vmName);
-
-                vmToUse.Name = vmName;
-                vmToUse.Created = true;
-                vmToUse.Delete = true;
-                setTimeout(done, timeout);
-              });
+            suite.execute('vm show %s --json', vmName, function (result) {
+              var certifiatesExist = checkForDockerCertificates(dockerCertDir);
+              certifiatesExist.should.be.true;
+              var cratedVM = JSON.parse(result.text);
+              var dockerPortExists = checkForDockerPort(cratedVM, dockerPort);
+              dockerPortExists.should.be.true;
+              cratedVM.VMName.should.equal(vmName);
+              vmToUse.Name = vmName;
+              vmToUse.Created = true;
+              vmToUse.Delete = true;
+              setTimeout(done, timeout);
             });
+          });
         });
       });
 
@@ -151,19 +147,19 @@ describe('cli', function () {
         getImageName('Linux', function (ImageName) {
           suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" --json --location %s --ssh --docker-cert-dir %s --docker-port %s',
             vmName, ImageName, location, dockerCertDir, dockerPort, function (result) {
-              suite.execute('vm show %s --json', vmName, function (result) {
-                var certifiatesExist = checkForDockerCertificates(dockerCertDir.toString());
-                certifiatesExist.should.be.true;
-                var cratedVM = JSON.parse(result.text);
-                var dockerPortExists = checkForDockerPort(cratedVM, dockerPort);
-                dockerPortExists.should.be.true;
-                cratedVM.VMName.should.equal(vmName);
-                vmToUse.Name = vmName;
-                vmToUse.Created = true;
-                vmToUse.Delete = true;
-                setTimeout(done, timeout);
-              });
+            suite.execute('vm show %s --json', vmName, function (result) {
+              var certifiatesExist = checkForDockerCertificates(dockerCertDir.toString());
+              certifiatesExist.should.be.true;
+              var cratedVM = JSON.parse(result.text);
+              var dockerPortExists = checkForDockerPort(cratedVM, dockerPort);
+              dockerPortExists.should.be.true;
+              cratedVM.VMName.should.equal(vmName);
+              vmToUse.Name = vmName;
+              vmToUse.Created = true;
+              vmToUse.Delete = true;
+              setTimeout(done, timeout);
             });
+          });
         });
       });
 
@@ -171,9 +167,9 @@ describe('cli', function () {
         getImageName('Linux', function (ImageName) {
           suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" --json --location %s --ssh 22 --docker-port 22',
             vmName, ImageName, location, function (result) {
-              result.exitStatus.should.not.equal(0);
-              setTimeout(done, timeout);
-            });
+            result.exitStatus.should.not.equal(0);
+            setTimeout(done, timeout);
+          });
         });
       });
 
@@ -181,9 +177,10 @@ describe('cli', function () {
         getImageName('Linux', function (ImageName) {
           suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" --json --location %s --ssh 22 --docker-port 3.2',
             vmName, ImageName, location, function (result) {
-              result.exitStatus.should.not.equal(0);
-              setTimeout(done, timeout);
-            });
+            result.exitStatus.should.not.equal(0);
+            result.errorText.should.include('A parameter was incorrect');
+            setTimeout(done, timeout);
+          });
         });
       });
 
@@ -191,9 +188,10 @@ describe('cli', function () {
         getImageName('Linux', function (ImageName) {
           suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" --json --location %s --ssh 22 --docker-cert-dir D:/foo/bar',
             vmName, ImageName, location, function (result) {
-              result.exitStatus.should.not.equal(0);
-              setTimeout(done, timeout);
-            });
+            result.exitStatus.should.not.equal(0);
+            result.errorText.should.include('ENOENT');
+            setTimeout(done, timeout);
+          });
         });
       });
 
@@ -229,15 +227,15 @@ describe('cli', function () {
 
     function checkForDockerCertificates(dockerCertDir, cb) {
       dockerCerts = {
-        caKey: path.join(dockerCertDir, 'ca-key.pem'),
-        ca: path.join(dockerCertDir, 'ca.pem'),
-        serverKey: path.join(dockerCertDir, 'server-key.pem'),
-        server: path.join(dockerCertDir, 'server.csr'),
-        serverCert: path.join(dockerCertDir, 'server-cert.pem'),
-        clientKey: path.join(dockerCertDir, 'key.pem'),
-        client: path.join(dockerCertDir, 'client.csr'),
-        clientCert: path.join(dockerCertDir, 'cert.pem'),
-        extfile: path.join(dockerCertDir, 'extfile.cnf')
+        caKey : path.join(dockerCertDir, 'ca-key.pem'),
+        ca : path.join(dockerCertDir, 'ca.pem'),
+        serverKey : path.join(dockerCertDir, 'server-key.pem'),
+        server : path.join(dockerCertDir, 'server.csr'),
+        serverCert : path.join(dockerCertDir, 'server-cert.pem'),
+        clientKey : path.join(dockerCertDir, 'key.pem'),
+        client : path.join(dockerCertDir, 'client.csr'),
+        clientCert : path.join(dockerCertDir, 'cert.pem'),
+        extfile : path.join(dockerCertDir, 'extfile.cnf')
       };
 
       if (!fs.existsSync(dockerCerts.caKey)) {
@@ -274,5 +272,6 @@ describe('cli', function () {
 
       return true;
     }
+
   });
 });
