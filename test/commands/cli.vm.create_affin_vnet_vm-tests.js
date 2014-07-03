@@ -60,7 +60,7 @@ describe('cli', function () {
 
         utils.POLL_REQUEST_INTERVAL = 0;
       }
-      
+
       vmVnetName = isForceMocked ? 'xplattestvmVnet' : suite.generateId(vmPrefix, null) + 'Vnet';
       suite.setupSuite(done);
     });
@@ -110,6 +110,54 @@ describe('cli', function () {
               vmToUse.Created = true;
               vmToUse.Name = vmVnetName;
               vmToUse.Delete = true;
+              done();
+            });
+          });
+        });
+      });
+
+      it('Vm should create with vnet and location', function (done) {
+        var vnetName_1 = vnetName + '-1';
+        getImageName('Linux', function (imageName) {
+          getVnet('Created', function (virtualnetName, affinityName) {
+            suite.execute('account affinity-group show %s --json', affinityName, function (result) {
+              var vnetObj = JSON.parse(result.text);
+              suite.execute('vm create -w %s -l %s %s %s "azureuser" "Pa$$word@123" --json',
+                virtualnetName, vnetObj.location, vnetName_1, imageName, function (result) {
+                result.exitStatus.should.equal(0);
+                vmToUse.Created = true;
+                vmToUse.Name = vnetName_1;
+                vmToUse.Delete = true;
+                done();
+              });
+            });
+          });
+        });
+      });
+
+      it('Vm should create with vnet', function (done) {
+        getImageName('Linux', function (imageName) {
+          getVnet('Created', function (virtualnetName, affinityName) {
+            var cmd = util.format('vm create -w %s %s %s "azureuser" "Pa$$word@123" --json',
+                virtualnetName, vnetName, imageName).split(' ');
+            suite.execute(cmd, function (result) {
+              result.exitStatus.should.equal(0);
+              vmToUse.Created = true;
+              vmToUse.Name = vnetName;
+              vmToUse.Delete = true;
+              done();
+            });
+          });
+        });
+      });
+
+      it('Should delete service on vm fail', function (done) {
+        getImageName('Linux', function (imageName) {
+          suite.execute('vm create -a %s -w %s %s %s "azureuser" "Pa$$word@123" --json',
+            'some_name', 'some_name', vmVnetName, imageName, function (result) {
+            result.exitStatus.should.equal(1);
+            suite.execute('service show %s --json', vmVnetName, function (result) {
+              result.text.should.equal('');
               done();
             });
           });
