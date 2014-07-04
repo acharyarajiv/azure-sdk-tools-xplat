@@ -56,13 +56,13 @@ describe('cli', function () {
       suite.teardownTest(done);
     });
 
-	after(function (done) {
+    after(function (done) {
       if (suite.isMocked) {
         crypto.randomBytes.restore();
       }
       suite.teardownSuite(done);
     });
-	
+
     // Negative Test Case by specifying invalid Password
     it('Negative test case for password', function (done) {
       var vmNegName = 'TestImg';
@@ -70,10 +70,10 @@ describe('cli', function () {
         var location = process.env.AZURE_VM_TEST_LOCATION || 'West US';
         suite.execute('vm create %s %s "azureuser" "Coll" --json --location %s',
           vmNegName, ImageName, location, function (result) {
-            result.exitStatus.should.equal(1);
-            result.errorText.should.include('password must be at least 8 character in length, it must contain a lower case, an upper case, a number and a special character such as !@#$%^&+=');
-            done();
-          });
+          result.exitStatus.should.equal(1);
+          result.errorText.should.include('password must be at least 8 character in length, it must contain a lower case, an upper case, a number and a special character such as !@#$%^&+=');
+          done();
+        });
       });
     });
 
@@ -84,11 +84,11 @@ describe('cli', function () {
       getImageName('Linux', function (ImageName) {
         suite.execute('vm create %s %s "azureuser" "Pa$$word@123" --json --location %s',
           vmNegName, ImageName, location, function (result) {
-            // check the error code for error
-            result.exitStatus.should.equal(1);
-            result.errorText.should.include('The hosted service name is invalid.');
-            done();
-          });
+          // check the error code for error
+          result.exitStatus.should.equal(1);
+          result.errorText.should.include('The hosted service name is invalid.');
+          done();
+        });
       });
     });
 
@@ -98,10 +98,26 @@ describe('cli', function () {
       getImageName('Linux', function (ImageName) {
         suite.execute('vm create %s %s "azureuser" "Pa$$word@123" --json --location %s',
           vmNegName, ImageName, 'SomeLoc', function (result) {
-            result.exitStatus.should.equal(1);
-            result.errorText.should.include(' No location found which has DisplayName or Name same as value of --location');
-            done();
-          });
+          result.exitStatus.should.equal(1);
+          result.errorText.should.include(' No location found which has DisplayName or Name same as value of --location');
+          done();
+        });
+      });
+    });
+
+    // Create VM with custom data with large file as customdata file
+    it('Negative testcase for custom data - Large File', function (done) {
+      var customVmName = 'xplatcustomvm';
+      var location = process.env.AZURE_VM_TEST_LOCATION || 'West US';
+      generateFile(fileName, 70000, null);
+      getImageName('Linux', function (ImageName) {
+        suite.execute('vm create %s %s "azureuser" "Pa$$word@123" -l %s -d %s --json -e',
+          customVmName, ImageName, location, fileName, function (result) {
+          result.exitStatus.should.equal(1);
+          result.errorText.should.include('--custom-data must be less then 64 KB');
+          fs.unlinkSync(fileName);
+          done();
+        });
       });
     });
 
