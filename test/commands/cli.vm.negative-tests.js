@@ -56,12 +56,18 @@ describe('cli', function () {
       suite.teardownTest(done);
     });
 
+	after(function (done) {
+      if (suite.isMocked) {
+        crypto.randomBytes.restore();
+      }
+      suite.teardownSuite(done);
+    });
+	
     // Negative Test Case by specifying invalid Password
     it('Negative test case for password', function (done) {
       var vmNegName = 'TestImg';
       getImageName('Linux', function (ImageName) {
-        var location = process.env.AZURE_VM_TEST_LOCATION || 'West US';;
-
+        var location = process.env.AZURE_VM_TEST_LOCATION || 'West US';
         suite.execute('vm create %s %s "azureuser" "Coll" --json --location %s',
           vmNegName, ImageName, location, function (result) {
             result.exitStatus.should.equal(1);
