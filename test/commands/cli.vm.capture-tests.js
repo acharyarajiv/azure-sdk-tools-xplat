@@ -94,6 +94,23 @@ describe('cli', function () {
       });
     });
 
+    // VM Capture into a disk
+    describe('Captured Images:', function () {
+      it('should be listed in images list', function (done) {
+        suite.execute('vm image list --json', function (result) {
+          var vmImagelist = JSON.parse(result.text);
+		  var imagefound = false;
+          imagefound = vmImagelist.some(function (imageObj) {
+            if (imageObj.name == captureImg) {
+              return true;
+            }
+          });
+          imagefound.should.true;
+          setTimeout(done, timeout);
+        });
+      });
+    });
+
     //delete the captured disk
     describe('Vm:', function () {
       it('delete captured image', function (done) {
