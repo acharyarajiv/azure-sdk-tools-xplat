@@ -31,6 +31,10 @@ var suite;
 var testPrefix = 'cli.vm.endpoint.update_delete-tests';
 
 var currentRandom = 0;
+var requiredEnvironment = [{
+  name: 'TEST_VM_NAME',
+  defaultValue: ''
+}];
 
 describe('cli', function() {
   describe('vm', function() {

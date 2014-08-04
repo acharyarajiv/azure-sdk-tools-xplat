@@ -30,6 +30,10 @@ var suite;
 var testPrefix = 'cli.vm.endpoint.create_multi_list-tests';
 
 var currentRandom = 0;
+var requiredEnvironment = [{
+  name: 'TEST_VM_NAME',
+  defaultValue: ''
+}];
 
 describe('cli', function() {
   describe('vm', function() {
