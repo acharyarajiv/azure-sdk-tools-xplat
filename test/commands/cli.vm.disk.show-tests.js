@@ -36,23 +36,10 @@ describe('cli', function() {
 
     before(function(done) {
       suite = new CLITest(testPrefix, [], isForceMocked);
-
-      if (suite.isMocked) {
-        sinon.stub(crypto, 'randomBytes', function() {
-          return (++currentRandom).toString();
-        });
-
-        utils.POLL_REQUEST_INTERVAL = 0;
-      }
-
       suite.setupSuite(done);
     });
 
     after(function(done) {
-      if (suite.isMocked) {
-        crypto.randomBytes.restore();
-      }
-
       suite.teardownSuite(done);
     });
 
@@ -87,5 +74,56 @@ describe('cli', function() {
         });
       });
     });
+	
+	//create and delete
+    describe('Disk:', function() {
+      it('create and delete', function(done) {
+		var diskName = suite.isMocked ? 'xplatestdisk' : suite.generateId(vmPrefix, null) + 'disk';
+        getDiskName('Linux', function(diskObj) {
+          diskSourcePath = diskObj.mediaLinkUri;
+          var domainUrl = 'http://' + diskSourcePath.split('/')[2];
+          var blobUrl = domainUrl + '/disks/' + diskName;
+          suite.execute('vm disk create %s %s --location %s -u %s --json', diskName, diskSourcePath, location, blobUrl, function(result) {
+            result.exitStatus.should.equal(0);
+            suite.execute('vm disk show %s --json', diskName, function(result) {
+              result.exitStatus.should.equal(0);
+              var diskObj = JSON.parse(result.text);
+              diskObj.name.should.equal(diskName);
+			  setTimeout(function(){
+				suite.execute('vm disk delete -b %s --json', diskName, function(result) {
+				  result.exitStatus.should.equal(0);
+				  setTimeout(done, timeout);
+				});
+			  },timeout);
+            });
+          });
+        });
+      });
+	  
+	  it('Upload', function(done) {
+        var sourcePath = suite.isMocked ? diskSourcePath : (process.env.BLOB_SOURCE_PATH || diskSourcePath);
+        var blobUrl = sourcePath.substring(0, sourcePath.lastIndexOf('/')) + '/' + suite.generateId(vmPrefix, null) + '.vhd';
+        suite.execute('vm disk upload %s %s %s --json', sourcePath, blobUrl, storageAccountKey, function(result) {
+          result.exitStatus.should.equal(0);
+          done();
+        });
+      });
+    });
+	
+	 // Get name of an disk of the given category
+    function getDiskName(OS, callBack) {
+      suite.execute('vm disk list --json', function(result) {
+        result.exitStatus.should.equal(0);
+        var diskList = JSON.parse(result.text);
+        diskList.some(function(disk) {
+          if ((disk.operatingSystemType && disk.operatingSystemType.toLowerCase() === OS.toLowerCase()) &&
+            (disk.location && disk.location.toLowerCase() === location.toLowerCase())) {
+            diskObj = disk;
+            return true;
+          }
+        });
+        callBack(diskObj);
+      });
+    }
   });
 });

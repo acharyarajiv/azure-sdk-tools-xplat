@@ -13,28 +13,17 @@
  * limitations under the License.
  */
 var should = require('should');
-var sinon = require('sinon');
 var util = require('util');
-var crypto = require('crypto');
-var fs = require('fs');
-var path = require('path');
-
-var isForceMocked = !process.env.NOCK_OFF;
-
-var utils = require('../../lib/util/utils');
 var CLITest = require('../framework/cli-test');
 
-var vmPrefix = 'clitestvm';
-var timeout = isForceMocked ? 0 : 30000;
-
 var suite;
+var vmPrefix = 'clitestvm';
 var testPrefix = 'cli.vm.create_win_rdp-tests';
+
 var requiredEnvironment = [{
   name: 'AZURE_VM_TEST_LOCATION',
   defaultValue: 'West US'
 }];
-
-var currentRandom = 0;
 
 describe('cli', function() {
   describe('vm', function() {
@@ -49,31 +38,19 @@ describe('cli', function() {
     };
 
     before(function(done) {
-      suite = new CLITest(testPrefix, requiredEnvironment, isForceMocked);
-
-      if (suite.isMocked) {
-        sinon.stub(crypto, 'randomBytes', function() {
-          return (++currentRandom).toString();
-        });
-
-        utils.POLL_REQUEST_INTERVAL = 0;
-      }
-
-      process.env.TEST_VM_NAME = isForceMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
+      suite = new CLITest(testPrefix, requiredEnvironment);
       suite.setupSuite(done);
+	  vmName = suite.isMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
     });
 
     after(function(done) {
-      if (suite.isMocked) {
-        crypto.randomBytes.restore();
-      }
       suite.teardownSuite(done);
     });
 
     beforeEach(function(done) {
       suite.setupTest(function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
-        vmName = process.env.TEST_VM_NAME;
+		timeout = suite.isMocked ? 0 : 30000;
         done();
       });
     });
@@ -104,8 +81,8 @@ describe('cli', function() {
     describe('Create:', function() {
       it('Windows Vm', function(done) {
         getImageName('Windows', function(ImageName) {
-          suite.execute('vm create -r %s %s %s azureuser PassW0rd$ -l %s --json',
-            '3389', vmName, ImageName, location, function(result) {
+          suite.execute('vm create %s %s azureuser PassW0rd$ -r -l %s --json',
+            vmName, ImageName, location, function(result) {
               result.exitStatus.should.equal(0);
               setTimeout(done, timeout);
             });
@@ -137,6 +114,9 @@ describe('cli', function() {
           vmName, vmImgName, location, function(result) {
             result.exitStatus.should.equal(1);
             result.errorText.should.include('A VM with dns prefix "' + vmName + '" already exists');
+			vmToUse.Name = vmName;
+			vmToUse.Created = true;
+			vmToUse.Delete = true;
             done();
           });
       });
