@@ -34,13 +34,13 @@ describe('cli', function () {
     password = 'PassW0rd$';
 
     before(function (done) {
-      suite = new CLITest(testPrefix, [], isForceMocked);
+      suite = new CLITest(testPrefix, requiredEnvironment);
       suite.setupSuite(done);
     });
 
     after(function (done) {
       deleteUsedVM(function () {
-          suite.teardownSuite(done);
+        suite.teardownSuite(done);
       });
     });
 
@@ -60,21 +60,21 @@ describe('cli', function () {
     //attaches a new disk
     describe('Disk:', function () {
       it('Attach-New', function (done) {
-        ListDisk(function ('Linux', function (diskObj) {
-            createVM(function () {
-              var domainUrl = 'http://' + diskObj.mediaLinkUri.split('/')[2];
-              var blobUrl = domainUrl + '/disks/' + suite.generateId(vmPrefix, null) + '.vhd';
-              suite.execute('vm disk attach-new %s %s %s --json', vmName, 1, blobUrl, function (result) {
-                result.exitStatus.should.equal(0);
-                waitForDiskOp(vmName, true, function () {
-                  suite.execute('vm disk detach %s 0 --json', vmName, function (result) {
-                    result.exitStatus.should.equal(0);
-                    waitForDiskOp(vmName, false, done);
-                  });
+        ListDisk('Linux', function (diskObj) {
+          createVM(function () {
+            var domainUrl = 'http://' + diskObj.mediaLinkUri.split('/')[2];
+            var blobUrl = domainUrl + '/disks/' + suite.generateId(vmPrefix, null) + '.vhd';
+            suite.execute('vm disk attach-new %s %s %s --json', vmName, 1, blobUrl, function (result) {
+              result.exitStatus.should.equal(0);
+              waitForDiskOp(vmName, true, function () {
+                suite.execute('vm disk detach %s 0 --json', vmName, function (result) {
+                  result.exitStatus.should.equal(0);
+                  waitForDiskOp(vmName, false, done);
                 });
               });
             });
           });
+        });
       });
     });
 
@@ -119,6 +119,7 @@ describe('cli', function () {
     }
 
     function ListDisk(OS, callback) {
+      var diskObj;
       suite.execute('vm disk list --json', function (result) {
         result.exitStatus.should.equal(0);
         var diskList = JSON.parse(result.text);
@@ -129,19 +130,19 @@ describe('cli', function () {
             return true;
           }
         });
-        callBack(diskObj);
+        callback(diskObj);
       });
     }
-	
-	function deleteUsedVM(callback) {
-		  var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');		   
-          setTimeout(function() {
-            suite.execute(cmd, function(result) {
-              result.exitStatus.should.equal(0);
-              return callback();
-            });
-          }, timeout);
-		}
+
+    function deleteUsedVM(callback) {
+      var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
+      setTimeout(function () {
+        suite.execute(cmd, function (result) {
+          result.exitStatus.should.equal(0);
+          return callback();
+        });
+      }, timeout);
+    }
 
   });
 });
