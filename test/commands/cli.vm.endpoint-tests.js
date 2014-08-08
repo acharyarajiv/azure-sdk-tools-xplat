@@ -19,7 +19,7 @@ var CLITest = require('../framework/cli-test');
 
 var suite;
 var vmPrefix = 'ClitestVm';
-var testPrefix = 'cli.vm.endpoint.create_multi_list-tests';
+var testPrefix = 'cli.vm.endpoint-tests';
 
 var requiredEnvironment = [{
   name: 'AZURE_VM_TEST_LOCATION',

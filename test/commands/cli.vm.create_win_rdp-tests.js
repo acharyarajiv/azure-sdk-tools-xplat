@@ -40,7 +40,7 @@ describe('cli', function() {
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
       suite.setupSuite(done);
-      vmName = suite.isMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
+      vmName = suite.isMocked ? 'XplattestVm1' : suite.generateId(vmPrefix, null);
     });
 
     after(function(done) {
@@ -57,7 +57,7 @@ describe('cli', function() {
 
     afterEach(function(done) {
       function deleteUsedVM(vm, callback) {
-        if (vm.Created && vm.Delete) {
+        if (vm.Created && vm.Delete && !suite.isMocked) {
           setTimeout(function() {
             var cmd = util.format('vm delete %s -b -q --json', vm.Name).split(' ');
             suite.execute(cmd, function(result) {
