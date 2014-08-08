@@ -17,7 +17,7 @@ var util = require('util');
 var CLITest = require('../framework/cli-test');
 
 var suite;
-var vmPrefix = 'clitestvm';
+var vmPrefix = 'ClitestVm';
 var testPrefix = 'cli.vm.capture-tests';
 
 var requiredEnvironment = [{
@@ -47,7 +47,7 @@ describe('cli', function() {
       suite.setupTest(function() {
         vmName = suite.isMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
         location = process.env.AZURE_VM_TEST_LOCATION;
-        timeout = suite.isMocked ? 0 : 5000;
+        timeout = suite.isMocked ? 0 : 10000;
         done();
       });
     });
@@ -66,7 +66,7 @@ describe('cli', function() {
               suite.execute('vm capture %s %s %s --json --delete', vmName, captureImg, function(result) {
                 result.exitStatus.should.equal(0);
                 setTimeout(function() {
-                  suite.execute('service delete %s --quiet --json', vmName, function(result) {
+                  suite.execute('service delete %s -q --json', vmName, function(result) {
                     result.exitStatus.should.equal(0);
                     done();
                   });

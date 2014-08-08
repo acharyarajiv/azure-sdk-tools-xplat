@@ -18,8 +18,8 @@ var fs = require('fs');
 var CLITest = require('../framework/cli-test');
 
 var suite;
-var vmPrefix = 'clitestvm';
-var testPrefix = 'cli.vm.create_from-tests';
+var vmPrefix = 'ClitestVm';
+var testPrefix = 'cli.vm.export_create_from-tests';
 
 var requiredEnvironment = [{
   name: 'AZURE_VM_TEST_LOCATION',
@@ -63,9 +63,9 @@ describe('cli', function() {
     afterEach(function(done) {
       function deleteUsedVM(vm, callback) {
         if (vm.Created && vm.Delete) {
-		  var cmd = vm.blobDelete ? 
-			util.format('vm delete %s -b -q --json', vm.Name).split(' ') :
-		    util.format('vm delete %s -q --json', vm.Name).split(' ');
+          var cmd = vm.blobDelete ?
+            util.format('vm delete %s -b -q --json', vm.Name).split(' ') :
+            util.format('vm delete %s -q --json', vm.Name).split(' ');
           setTimeout(function() {
             suite.execute(cmd, function(result) {
               result.exitStatus.should.equal(0);

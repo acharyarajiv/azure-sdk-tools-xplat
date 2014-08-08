@@ -17,7 +17,7 @@ var util = require('util');
 var CLITest = require('../framework/cli-test');
 
 var suite;
-var vmPrefix = 'clitestvm';
+var vmPrefix = 'ClitestVm';
 var testPrefix = 'cli.vm.create_win_rdp-tests';
 
 var requiredEnvironment = [{
@@ -40,7 +40,7 @@ describe('cli', function() {
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
       suite.setupSuite(done);
-	  vmName = suite.isMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
+      vmName = suite.isMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
     });
 
     after(function(done) {
@@ -50,7 +50,7 @@ describe('cli', function() {
     beforeEach(function(done) {
       suite.setupTest(function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
-		timeout = suite.isMocked ? 0 : 30000;
+        timeout = suite.isMocked ? 0 : 30000;
         done();
       });
     });
@@ -114,9 +114,9 @@ describe('cli', function() {
           vmName, vmImgName, location, function(result) {
             result.exitStatus.should.equal(1);
             result.errorText.should.include('A VM with dns prefix "' + vmName + '" already exists');
-			vmToUse.Name = vmName;
-			vmToUse.Created = true;
-			vmToUse.Delete = true;
+            vmToUse.Name = vmName;
+            vmToUse.Created = true;
+            vmToUse.Delete = true;
             done();
           });
       });

@@ -46,7 +46,7 @@ describe('cli', function () {
 
     beforeEach(function (done) {
       suite.setupTest(function () {
-        vmName = suite.isMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
+        vmName = suite.isMocked ? 'XplattestVm' : suite.generateId(vmPrefix, null);
         location = process.env.AZURE_VM_TEST_LOCATION;
         timeout = suite.isMocked ? 0 : 5000;
         done();

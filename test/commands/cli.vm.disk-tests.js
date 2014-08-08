@@ -13,19 +13,11 @@
  * limitations under the License.
  */
 var should = require('should');
-var sinon = require('sinon');
-var util = require('util');
-var crypto = require('crypto');
-var fs = require('fs');
-var path = require('path');
-
-var isForceMocked = !process.env.NOCK_OFF;
-var utils = require('../../lib/util/utils');
 var CLITest = require('../framework/cli-test');
-var timeout = isForceMocked ? 0 : 5000;
-var vmPrefix = 'clitestvm';
+
 var suite;
-var testPrefix = 'cli.vm.disk.create_upload-tests';
+var vmPrefix = 'clitestvm';
+var testPrefix = 'cli.vm.disk-tests';
 var requiredEnvironment = [{
   name: 'AZURE_VM_TEST_LOCATION',
   defaultValue: 'West US'
@@ -36,42 +28,25 @@ var requiredEnvironment = [{
   name: 'BLOB_SOURCE_PATH',
   defaultValue: null
 }];
-var currentRandom = 0;
 
 describe('cli', function() {
   describe('vm', function() {
-    var diskName = 'xplattestdisk',
-      diskObj,
-      diskSourcePath,
-      location,
-      storageAccountKey;
+    var diskSourcePath,
+      storageAccountKey, timeout;
 
     before(function(done) {
-      suite = new CLITest(testPrefix, requiredEnvironment, isForceMocked);
-
-      if (suite.isMocked) {
-        sinon.stub(crypto, 'randomBytes', function() {
-          return (++currentRandom).toString();
-        });
-
-        utils.POLL_REQUEST_INTERVAL = 0;
-      }
-
+      suite = new CLITest(testPrefix, requiredEnvironment);
       suite.setupSuite(done);
     });
 
     after(function(done) {
-      if (suite.isMocked) {
-        crypto.randomBytes.restore();
-      }
-
       suite.teardownSuite(done);
     });
 
     beforeEach(function(done) {
       suite.setupTest(function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
-        storageAccountKey = process.env.AZURE_STORAGE_ACCESS_KEY;
+        timeout = suite.isMocked ? 0 : 5000;
         done();
       });
     });
@@ -80,9 +55,34 @@ describe('cli', function() {
       suite.teardownTest(done);
     });
 
-    //create a disk
+    //list and show the disk
     describe('Disk:', function() {
-      it('Create', function(done) {
+      it('List and Show', function(done) {
+        suite.execute('vm disk list --json', function(result) {
+          result.exitStatus.should.equal(0);
+          var diskList = JSON.parse(result.text);
+          diskList.length.should.be.above(0);
+          var diskName = '';
+          diskList.some(function(disk) {
+            if (disk.operatingSystemType && disk.operatingSystemType.toLowerCase() === 'linux') {
+              diskName = disk.name;
+            }
+          });
+
+          suite.execute('vm disk show %s --json', diskName, function(result) {
+            result.exitStatus.should.equal(0);
+            var disk = JSON.parse(result.text);
+            disk.name.should.equal(diskName);
+            done();
+          });
+        });
+      });
+    });
+
+    //create and delete
+    describe('Disk:', function() {
+      it('create and delete', function(done) {
+        var diskName = suite.isMocked ? 'xplatestdisk' : suite.generateId(vmPrefix, null) + 'disk';
         getDiskName('Linux', function(diskObj) {
           diskSourcePath = diskObj.mediaLinkUri;
           var domainUrl = 'http://' + diskSourcePath.split('/')[2];
@@ -93,14 +93,17 @@ describe('cli', function() {
               result.exitStatus.should.equal(0);
               var diskObj = JSON.parse(result.text);
               diskObj.name.should.equal(diskName);
-              setTimeout(done, timeout);
+              setTimeout(function() {
+                suite.execute('vm disk delete -b %s --json', diskName, function(result) {
+                  result.exitStatus.should.equal(0);
+                  setTimeout(done, timeout);
+                });
+              }, timeout);
             });
           });
         });
       });
-    });
 
-    describe('Disk:', function() {
       it('Upload', function(done) {
         var sourcePath = suite.isMocked ? diskSourcePath : (process.env.BLOB_SOURCE_PATH || diskSourcePath);
         var blobUrl = sourcePath.substring(0, sourcePath.lastIndexOf('/')) + '/' + suite.generateId(vmPrefix, null) + '.vhd';
@@ -113,6 +116,7 @@ describe('cli', function() {
 
     // Get name of an disk of the given category
     function getDiskName(OS, callBack) {
+      var diskObj;
       suite.execute('vm disk list --json', function(result) {
         result.exitStatus.should.equal(0);
         var diskList = JSON.parse(result.text);

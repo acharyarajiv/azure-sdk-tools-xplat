@@ -25,16 +25,19 @@ var utils = require('../../lib/util/utils');
 var CLITest = require('../framework/cli-test');
 
 var vmPrefix = 'clitestvm';
-var timeout = isForceMocked ? 0 : 5000;
 
 var suite;
-var testPrefix = 'cli.vm.deldisk-tests';
+var testPrefix = 'cli.vm.list_show-tests';
 
 var currentRandom = 0;
+var requiredEnvironment = [{
+  name: 'TEST_VM_NAME',
+  defaultValue: ''
+}];
 
 describe('cli', function() {
   describe('vm', function() {
-    var diskName = 'xplattestdisk';
+    var vmName;
 
     before(function(done) {
       suite = new CLITest(testPrefix, [], isForceMocked);
@@ -46,7 +49,6 @@ describe('cli', function() {
 
         utils.POLL_REQUEST_INTERVAL = 0;
       }
-
       suite.setupSuite(done);
     });
 
@@ -58,19 +60,47 @@ describe('cli', function() {
     });
 
     beforeEach(function(done) {
-      suite.setupTest(done);
+      suite.setupTest(function() {
+        vmName = process.env.TEST_VM_NAME;
+        done();
+      });
     });
 
     afterEach(function(done) {
       suite.teardownTest(done);
     });
 
-    //delete the disk
-    describe('Delete:', function() {
-      it('Disk', function(done) {
-        suite.execute('vm disk delete -b %s --json', diskName, function(result) {
+    describe('Vm', function() {
+
+      //location list
+      it('Location List', function(done) {
+        suite.execute('vm location list --json', function(result) {
           result.exitStatus.should.equal(0);
-          setTimeout(done, timeout);
+          result.text.should.not.empty;
+          done();
+        });
+      });
+
+      it('List', function(done) {
+        suite.execute('vm list --json', function(result) {
+          result.exitStatus.should.equal(0);
+          var vmList = JSON.parse(result.text);
+
+          // Look for created VM
+          var vmExists = vmList.some(function(vm) {
+            return vm.VMName.toLowerCase() === vmName.toLowerCase();
+          });
+          vmExists.should.be.ok;
+          done();
+        });
+      });
+
+      it('Show', function(done) {
+        suite.execute('vm show %s --json', vmName, function(result) {
+          result.exitStatus.should.equal(0);
+          var vmObj = JSON.parse(result.text);
+          vmObj.VMName.should.equal(vmName);
+          done();
         });
       });
     });
