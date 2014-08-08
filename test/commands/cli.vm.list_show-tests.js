@@ -13,94 +13,55 @@
  * limitations under the License.
  */
 var should = require('should');
-var sinon = require('sinon');
-var util = require('util');
-var crypto = require('crypto');
-var fs = require('fs');
-var path = require('path');
-
-var isForceMocked = !process.env.NOCK_OFF;
-
-var utils = require('../../lib/util/utils');
 var CLITest = require('../framework/cli-test');
-
-var vmPrefix = 'clitestvm';
 
 var suite;
 var testPrefix = 'cli.vm.list_show-tests';
 
-var currentRandom = 0;
-var requiredEnvironment = [{
-  name: 'TEST_VM_NAME',
-  defaultValue: ''
-}];
-
-describe('cli', function() {
-  describe('vm', function() {
+describe('cli', function () {
+  describe('vm', function () {
     var vmName;
 
-    before(function(done) {
-      suite = new CLITest(testPrefix, [], isForceMocked);
-
-      if (suite.isMocked) {
-        sinon.stub(crypto, 'randomBytes', function() {
-          return (++currentRandom).toString();
-        });
-
-        utils.POLL_REQUEST_INTERVAL = 0;
-      }
+    before(function (done) {
+      suite = new CLITest(testPrefix, []);
       suite.setupSuite(done);
     });
 
-    after(function(done) {
-      if (suite.isMocked) {
-        crypto.randomBytes.restore();
-      }
+    after(function (done) {
       suite.teardownSuite(done);
     });
 
-    beforeEach(function(done) {
-      suite.setupTest(function() {
-        vmName = process.env.TEST_VM_NAME;
-        done();
-      });
+    beforeEach(function (done) {
+      suite.setupTest(done);
     });
 
-    afterEach(function(done) {
+    afterEach(function (done) {
       suite.teardownTest(done);
     });
 
-    describe('Vm', function() {
+    describe('Vm', function () {
 
       //location list
-      it('Location List', function(done) {
-        suite.execute('vm location list --json', function(result) {
+      it('Location List', function (done) {
+        suite.execute('vm location list --json', function (result) {
           result.exitStatus.should.equal(0);
           result.text.should.not.empty;
           done();
         });
       });
 
-      it('List', function(done) {
-        suite.execute('vm list --json', function(result) {
+      it('List and Show', function (done) {
+        suite.execute('vm list --json', function (result) {
           result.exitStatus.should.equal(0);
           var vmList = JSON.parse(result.text);
-
-          // Look for created VM
-          var vmExists = vmList.some(function(vm) {
-            return vm.VMName.toLowerCase() === vmName.toLowerCase();
+          vmList.length.should.be.above(0);
+          vmName = vmList[0].VMName;
+          suite.execute('vm show %s --json', vmName, function (result) {
+            result.exitStatus.should.equal(0);
+            var vmObj = JSON.parse(result.text);
+            vmObj.VMName.should.equal(vmName);
+            done();
           });
-          vmExists.should.be.ok;
-          done();
-        });
-      });
-
-      it('Show', function(done) {
-        suite.execute('vm show %s --json', vmName, function(result) {
-          result.exitStatus.should.equal(0);
-          var vmObj = JSON.parse(result.text);
-          vmObj.VMName.should.equal(vmName);
-          done();
         });
       });
     });
