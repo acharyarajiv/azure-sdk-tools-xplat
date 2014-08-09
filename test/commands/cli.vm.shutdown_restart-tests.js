@@ -17,107 +17,109 @@ var util = require('util');
 var CLITest = require('../framework/cli-test');
 
 // A common VM used by multiple tests
-
-var vmPrefix = 'clitestvm';
-var vmNames = [];
-
 var suite;
+var vmPrefix = 'clitestvm';
 var testPrefix = 'cli.vm.shutdown_restart-tests';
+
 var requiredEnvironment = [{
-		name : 'AZURE_VM_TEST_LOCATION',
-		defaultValue : 'West US'
-	}
+    name : 'AZURE_VM_TEST_LOCATION',
+    defaultValue : 'West US'
+  }
 ];
 
-var currentRandom = 0;
-
 describe('cli', function () {
-	describe('vm', function () {
-		var vmName,
-		location,
-		username = 'azureuser',
-		password = 'Collabera@01'
+  describe('vm', function () {
+    var vmName,
+    location,
+    username = 'azureuser',
+    password = 'Collabera@01'
 
-			before(function (done) {
-				suite = new CLITest(testPrefix, requiredEnvironment);
-				suite.setupSuite(done);
-			});
+      before(function (done) {
+        suite = new CLITest(testPrefix, requiredEnvironment);
+        suite.setupSuite(done);
+      });
 
-		 after(function(done) {
-          suite.teardownSuite(done);
+    after(function (done) {
+      deleteUsedVM(function () {
+        suite.teardownSuite(done);
+      });
+    });
+
+    beforeEach(function (done) {
+      suite.setupTest(function () {
+        vmName = suite.isMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
+        location = process.env.AZURE_VM_TEST_LOCATION;
+        timeout = suite.isMocked ? 0 : 5000;
+        done();
+      });
+    });
+
+    afterEach(function (done) {
+        suite.teardownTest(done);
+    });
+
+    describe('Vm:', function () {
+      it('Shutdown and start', function (done) {
+        createVM(function () {
+          suite.execute('vm shutdown %s --json', vmName, function (result) {
+            result.exitStatus.should.equal(0);
+            setTimeout(function () {
+              suite.execute('vm start %s --json', vmName, function (result) {
+                result.exitStatus.should.equal(0);
+                done();
+              });
+            }, timeout);
+          });
         });
+      });
 
-		beforeEach(function (done) {
-			suite.setupTest(function () {
-				vmName = suite.isMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
-				location = process.env.AZURE_VM_TEST_LOCATION;
-				timeout = suite.isMocked ? 0 : 5000;
-				done();
-			});
-		});
+      // VM Restart
+      it('Restart', function (done) {
+        suite.execute('vm restart  %s --json', vmName, function (result) {
+          result.exitStatus.should.equal(0);
+          done();
+        });
+      });
+    });
 
-		afterEach(function (done) {
-			setTimeout(function () {
-				suite.teardownTest(done);
-			}, timeout);
-		});
+    function createVM(callback) {
+      getImageName('Linux', function (imagename) {
+        suite.execute('vm create %s %s %s %s -l %s --json', vmName, imagename, username, password, location,
+          function (result) {
+          result.exitStatus.should.equal(0);
+          setTimeout(callback, timeout);
+        });
+      });
+    }
 
-		describe('Vm:', function () {
-			it('Shutdown and start', function (done) {
-				createVM(function () {
-					suite.execute('vm shutdown %s --json', vmName, function (result) {
-						result.exitStatus.should.equal(0);
-						setTimeout(function () {
-							suite.execute('vm start %s --json', vmName, function (result) {
-								result.exitStatus.should.equal(0);
-								done();
-							});
-						}, timeout);
-					});
-				});
-			});
-
-			// VM Restart
-			it('Restart', function (done) {
-				suite.execute('vm restart  %s --json', vmName, function (result) {
-					result.exitStatus.should.equal(0);
-					done();
-				});
-			});
-			
-			// VM Delete
-			it('Delete', function (done) {
-				suite.execute('vm delete %s -b -q --json', vmName, function (result) {
-					result.exitStatus.should.equal(0);
-					done();
-				});
-			});
-		});
-
-		function createVM(callback) {
-			getImageName('Linux', function (imagename) {
-				suite.execute('vm create %s %s %s %s -l %s --json', vmName, imagename, username, password, location,
-					function (result) {
-					result.exitStatus.should.equal(0);
-					setTimeout(callback, timeout);
-				});
-			});
-		}
-
-		// Get name of an image of the given category
-		function getImageName(category, callBack) {
-			var cmd = util.format('vm image list --json').split(' ');
+    // Get name of an image of the given category
+    function getImageName(category, callBack) {
+      var cmd = util.format('vm image list --json').split(' ');
+      suite.execute(cmd, function (result) {
+        result.exitStatus.should.equal(0);
+        var imageList = JSON.parse(result.text);
+        imageList.some(function (image) {
+          if ((image.operatingSystemType || image.oSDiskConfiguration.operatingSystem).toLowerCase() === category.toLowerCase() && image.category.toLowerCase() === 'public') {
+            vmImgName = image.name;
+            return true;
+          }
+        });
+        callBack(vmImgName);
+      });
+    }
+	
+	function deleteUsedVM(callback) {
+	  if(suite.isMocked)
+		callback();
+	  else{
+		  var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
+		  setTimeout(function () {
 			suite.execute(cmd, function (result) {
-				result.exitStatus.should.equal(0);
-				var imageList = JSON.parse(result.text);
-				imageList.some(function (image) {
-					if ((image.operatingSystemType || image.oSDiskConfiguration.operatingSystem).toLowerCase() === category.toLowerCase() && image.category.toLowerCase() === 'public') {
-						vmImgName = image.name;
-						return true;
-					}
-				});
-				callBack(vmImgName);
+			  result.exitStatus.should.equal(0);
+			  return callback();
 			});
-		}
-	});
+		  }, timeout);
+	  }
+    }
+  });
 });
