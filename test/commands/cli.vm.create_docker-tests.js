@@ -71,7 +71,7 @@ describe('cli', function() {
     beforeEach(function(done) {
       suite.setupTest(function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
-        vmName = process.env.TEST_VM_NAME;
+        vmName = suite.isMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
         done();
       });
     });
@@ -203,7 +203,6 @@ describe('cli', function() {
             });
         });
       });
-
     });
 
     // Get name of an image of the given category

@@ -23,11 +23,15 @@ var testPrefix = 'cli.vm.capture-tests';
 var requiredEnvironment = [{
   name: 'AZURE_VM_TEST_LOCATION',
   defaultValue: 'West US'
+}, {
+  name: 'SSHCERT',
+  defaultValue: null
 }];
 
 describe('cli', function() {
   describe('vm', function() {
     var vmName,
+      certFile,
       location,
       username = 'azureuser',
       password = 'PassW0rd$',
@@ -48,6 +52,7 @@ describe('cli', function() {
         vmName = suite.isMocked ? 'xplattestvm' : suite.generateId(vmPrefix, null);
         location = process.env.AZURE_VM_TEST_LOCATION;
         timeout = suite.isMocked ? 0 : 10000;
+        certFile = process.env.SSHCERT;
         done();
       });
     });
@@ -103,7 +108,7 @@ describe('cli', function() {
 
     function createVM(callback) {
       getImageName('Linux', function(imagename) {
-        suite.execute('vm create %s %s %s %s -l %s --json', vmName, imagename, username, password, location,
+        suite.execute('vm create --ssh-cert %s %s %s %s %s -l %s --json', certFile, vmName, imagename, username, password, location,
           function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(callback, timeout);
