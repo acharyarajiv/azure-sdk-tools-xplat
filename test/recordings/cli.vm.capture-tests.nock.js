@@ -28,6 +28,7 @@ exports.getMockedProfile = function () {
 
 exports.setEnvironment = function () {
   process.env['AZURE_VM_TEST_LOCATION'] = 'West US';
+  process.env['SSHCERT'] = 'test/data/fakeSshcert.pem';
 }
 
 exports.scopes = [[function (nock) {
@@ -150,6 +151,22 @@ exports.scopes = [[function (nock) {
           'x-ms-servedbyregion' : 'ussouth2',
           'x-ms-request-id' : '4fa077945654c9459d6811059d8a39c3',
           date : 'Sat, 09 Aug 2014 03:18:28 GMT'
+        });
+      return result;
+    },
+    function(nock) {
+      var result = nock('https://management.core.windows.net:443')
+        .filteringRequestBody(function(path) {
+          return '*';
+        })
+        .post('/db1ab6f0-4769-4b27-930e-01e2ef9c123f/services/hostedservices/xplattestvm/certificates', "*")
+        .reply(202, "", {
+          'cache-control': 'no-cache',
+          'content-length': '0',
+          server: '1.0.6198.25 (rd_rdfe_stable.131118-1436) Microsoft-HTTPAPI/2.0',
+          'x-ms-servedbyregion': 'ussouth',
+          'x-ms-request-id': '872c6309016d3f6da2fc87faedfbb793',
+          date: 'Fri, 22 Nov 2013 05:21:52 GMT'
         });
       return result;
     },
