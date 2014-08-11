@@ -35,7 +35,7 @@ describe('cli', function() {
     var customVmName;
     var fileName = 'customdata',
       certFile,
-      timeout,
+	  timeout,
       location,
       vmsize = 'small',
       sshPort = '223';
@@ -58,9 +58,9 @@ describe('cli', function() {
     beforeEach(function(done) {
       suite.setupTest(function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
-        customVmName = suite.isMocked ? 'xplattestvmcustdata' : suite.generateId(vmPrefix, null) + 'cdata'
+		customVmName = suite.isMocked ? 'xplattestvmcustdata' : suite.generateId(vmPrefix, null) + 'cdata';
         certFile = process.env.SSHCERT;
-        timeout = suite.isMocked ? 0 : 5000;
+		timeout = suite.isMocked ? 0 : 5000;
         done();
       });
     });
