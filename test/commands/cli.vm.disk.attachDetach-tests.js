@@ -155,31 +155,31 @@ describe('cli', function() {
     }
 
     function deleteDisk(callback) {
-	  if(suite.isMocked)
-		callback();
-	  else{
-		  var cmd = util.format('vm disk delete %s -b --json', diskName).split(' ');
-		  setTimeout(function() {
-			suite.execute(cmd, function(result) {
-			  result.exitStatus.should.equal(0);
-			  return callback();
-			});
-		  }, timeout);
-	  }
+      if (suite.isMocked)
+        callback();
+      else {
+        var cmd = util.format('vm disk delete %s -b --json', diskName).split(' ');
+        setTimeout(function() {
+          suite.execute(cmd, function(result) {
+            result.exitStatus.should.equal(0);
+            return callback();
+          });
+        }, timeout);
+      }
     }
 
     function deleteUsedVM(callback) {
-	  if(suite.isMocked)
-		callback();
-	  else{
-		  var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
-		  setTimeout(function() {
-			suite.execute(cmd, function(result) {
-			  result.exitStatus.should.equal(0);
-			  return callback();
-			});
-		  }, timeout);
-	  }
+      if (suite.isMocked)
+        callback();
+      else {
+        var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
+        setTimeout(function() {
+          suite.execute(cmd, function(result) {
+            result.exitStatus.should.equal(0);
+            return callback();
+          });
+        }, timeout);
+      }
     }
   });
 });

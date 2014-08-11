@@ -13,29 +13,16 @@
  * limitations under the License.
  */
 var should = require('should');
-var sinon = require('sinon');
 var util = require('util');
-var crypto = require('crypto');
-var fs = require('fs');
-var path = require('path');
-
-var isForceMocked = !process.env.NOCK_OFF;
-
-var utils = require('../../lib/util/utils');
 var CLITest = require('../framework/cli-test');
 
-var vmPrefix = 'clitestvm';
-var vmNames = [];
-var timeout = isForceMocked ? 0 : 5000;
-
 var suite;
+var vmPrefix = 'clitestvm';
 var testPrefix = 'cli.vm.create_affin_vnet_vm-tests';
 var requiredEnvironment = [{
   name: 'AZURE_VM_TEST_LOCATION',
   defaultValue: 'West US'
 }];
-
-var currentRandom = 0;
 
 describe('cli', function() {
   describe('vm', function() {
@@ -46,7 +33,8 @@ describe('cli', function() {
       location,
       availSetName = 'Testset',
       userName = 'azureuser',
-      password = 'Pa$$word@123';
+      password = 'Pa$$word@123',
+      timeout;
 
     var vmToUse = {
       Name: null,
@@ -55,30 +43,19 @@ describe('cli', function() {
     };
 
     before(function(done) {
-      suite = new CLITest(testPrefix, requiredEnvironment, isForceMocked);
-
-      if (suite.isMocked) {
-        sinon.stub(crypto, 'randomBytes', function() {
-          return (++currentRandom).toString();
-        });
-
-        utils.POLL_REQUEST_INTERVAL = 0;
-      }
-
-      vmVnetName = isForceMocked ? 'xplattestvmVnet' : suite.generateId(vmPrefix, null) + 'Vnet';
+      suite = new CLITest(testPrefix, requiredEnvironment);
+      vmVnetName = suite.isMocked ? 'xplattestvmVnet' : suite.generateId(vmPrefix, null) + 'Vnet';
       suite.setupSuite(done);
     });
 
     after(function(done) {
-      if (suite.isMocked) {
-        crypto.randomBytes.restore();
-      }
       suite.teardownSuite(done);
     });
 
     beforeEach(function(done) {
       suite.setupTest(function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
+        timeout = suite.isMocked ? 0 : 5000;
         done();
       });
     });

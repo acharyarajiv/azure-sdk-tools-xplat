@@ -13,23 +13,15 @@
  * limitations under the License.
  */
 var should = require('should');
-var sinon = require('sinon');
 var util = require('util');
-var crypto = require('crypto');
 var fs = require('fs');
-var path = require('path');
-
-var isForceMocked = !process.env.NOCK_OFF;
-
-var utils = require('../../lib/util/utils');
 var testUtils = require('../util/util');
 var CLITest = require('../framework/cli-test');
 
-var vmPrefix = 'clitestvm';
-
 var suite;
+var vmPrefix = 'clitestvm';
 var testPrefix = 'cli.vm.create_custom-tests';
-var timeout = isForceMocked ? 0 : 5000;
+
 var requiredEnvironment = [{
   name: 'AZURE_VM_TEST_LOCATION',
   defaultValue: 'West US'
@@ -38,13 +30,12 @@ var requiredEnvironment = [{
   defaultValue: null
 }];
 
-var currentRandom = 0;
-
 describe('cli', function() {
   describe('vm', function() {
-    var customVmName = 'xplattestvmcustdata';
+    var customVmName;
     var fileName = 'customdata',
       certFile,
+      timeout,
       location,
       vmsize = 'small',
       sshPort = '223';
@@ -56,30 +47,20 @@ describe('cli', function() {
     };
 
     before(function(done) {
-      suite = new CLITest(testPrefix, requiredEnvironment, isForceMocked);
-
-      if (suite.isMocked) {
-        sinon.stub(crypto, 'randomBytes', function() {
-          return (++currentRandom).toString();
-        });
-
-        utils.POLL_REQUEST_INTERVAL = 0;
-      }
-
+      suite = new CLITest(testPrefix, requiredEnvironment);
       suite.setupSuite(done);
     });
 
     after(function(done) {
-      if (suite.isMocked) {
-        crypto.randomBytes.restore();
-      }
       suite.teardownSuite(done);
     });
 
     beforeEach(function(done) {
       suite.setupTest(function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
+        customVmName = suite.isMocked ? 'xplattestvmcustdata' : suite.generateId(vmPrefix, null) + 'cdata'
         certFile = process.env.SSHCERT;
+        timeout = suite.isMocked ? 0 : 5000;
         done();
       });
     });

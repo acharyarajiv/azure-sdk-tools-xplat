@@ -13,41 +13,21 @@
  * limitations under the License.
  */
 var should = require('should');
-var sinon = require('sinon');
-var util = require('util');
-var crypto = require('crypto');
-var fs = require('fs');
-var path = require('path');
-var testUtils = require('../util/util');
-var isForceMocked = !process.env.NOCK_OFF;
-
-var utils = require('../../lib/util/utils');
 var CLITest = require('../framework/cli-test');
 
-var vmPrefix = 'clitestvm';
 var suite;
 var testPrefix = 'cli.vm.negative-tests';
+
 var requiredEnvironment = [{
   name: 'AZURE_VM_TEST_LOCATION',
   defaultValue: 'West US'
 }];
 
-var currentRandom = 0;
-
 describe('cli', function() {
   describe('vm', function() {
     var location;
     before(function(done) {
-      suite = new CLITest(testPrefix, requiredEnvironment, isForceMocked);
-
-      if (suite.isMocked) {
-        sinon.stub(crypto, 'randomBytes', function() {
-          return (++currentRandom).toString();
-        });
-
-        utils.POLL_REQUEST_INTERVAL = 0;
-      }
-
+      suite = new CLITest(testPrefix, requiredEnvironment);
       suite.setupSuite(done);
     });
 
@@ -63,9 +43,6 @@ describe('cli', function() {
     });
 
     after(function(done) {
-      if (suite.isMocked) {
-        crypto.randomBytes.restore();
-      }
       suite.teardownSuite(done);
     });
 

@@ -18,45 +18,45 @@ var CLITest = require('../framework/cli-test');
 var suite;
 var testPrefix = 'cli.vm.list_show-tests';
 
-describe('cli', function () {
-  describe('vm', function () {
+describe('cli', function() {
+  describe('vm', function() {
     var vmName;
 
-    before(function (done) {
+    before(function(done) {
       suite = new CLITest(testPrefix, []);
       suite.setupSuite(done);
     });
 
-    after(function (done) {
+    after(function(done) {
       suite.teardownSuite(done);
     });
 
-    beforeEach(function (done) {
+    beforeEach(function(done) {
       suite.setupTest(done);
     });
 
-    afterEach(function (done) {
+    afterEach(function(done) {
       suite.teardownTest(done);
     });
 
-    describe('Vm', function () {
+    describe('Vm', function() {
 
       //location list
-      it('Location List', function (done) {
-        suite.execute('vm location list --json', function (result) {
+      it('Location List', function(done) {
+        suite.execute('vm location list --json', function(result) {
           result.exitStatus.should.equal(0);
           result.text.should.not.empty;
           done();
         });
       });
 
-      it('List and Show', function (done) {
-        suite.execute('vm list --json', function (result) {
+      it('List and Show', function(done) {
+        suite.execute('vm list --json', function(result) {
           result.exitStatus.should.equal(0);
           var vmList = JSON.parse(result.text);
           vmList.length.should.be.above(0);
           vmName = vmList[0].VMName;
-          suite.execute('vm show %s --json', vmName, function (result) {
+          suite.execute('vm show %s --json', vmName, function(result) {
             result.exitStatus.should.equal(0);
             var vmObj = JSON.parse(result.text);
             vmObj.VMName.should.equal(vmName);
