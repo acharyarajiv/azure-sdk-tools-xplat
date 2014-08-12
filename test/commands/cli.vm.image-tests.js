@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 var should = require('should');
+var util = require('util');
+var testUtils = require('../util/util');
 var CLITest = require('../framework/cli-test');
 
 var suite;
@@ -60,7 +62,10 @@ describe('cli', function() {
           var domainUrl = 'http://' + imageSourcePath.split('/')[2];
           var blobUrl = domainUrl + '/vm-images/' + vmImgName;
 
-          suite.execute('vm image create -u %s %s %s --os %s -l %s --json', blobUrl, vmImgName, imageSourcePath, 'Linux', location, function(result) {
+          var cmd = util.format('vm image create -u %s %s %s --os %s --json', blobUrl, vmImgName, imageSourcePath, 'Linux').split(' ');
+          cmd.push('-l');
+          cmd.push(location);
+          testUtils.executeCommand(suite, 5, cmd, function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(done, timeout);
           });
@@ -69,7 +74,8 @@ describe('cli', function() {
 
       //show the created image
       it('Show', function(done) {
-        suite.execute('vm image show %s --json', vmImgName, function(result) {
+        var cmd = util.format('vm image show %s --json', vmImgName).split(' ');
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vmImageObj = JSON.parse(result.text);
           vmImageObj.name.should.equal(vmImgName);
@@ -80,7 +86,8 @@ describe('cli', function() {
 
       //list all images
       it('List', function(done) {
-        suite.execute('vm image list --json', function(result) {
+        var cmd = util.format('vm image list --json').split(' ');
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var imageList = JSON.parse(result.text);
           imageList.length.should.be.above(0);
@@ -123,7 +130,8 @@ describe('cli', function() {
       });
 
       it('Delete', function(done) {
-        suite.execute('vm image delete -b %s --json', vmImgName, function(result) {
+        var cmd = util.format('vm image delete -b %s --json', vmImgName).split(' ');
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
           result.exitStatus.should.equal(0);
           setTimeout(done, timeout);
         });
@@ -132,7 +140,8 @@ describe('cli', function() {
 
     // Get name of an disk of the given category
     function getDiskName(OS, callBack) {
-      suite.execute('vm disk list --json', function(result) {
+      var cmd = util.format('vm disk list --json').split(' ');
+      testUtils.executeCommand(suite, 5, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var diskList = JSON.parse(result.text);
         diskList.some(function(disk) {

@@ -14,6 +14,7 @@
  */
 var should = require('should');
 var util = require('util');
+var testUtils = require('../util/util');
 var CLITest = require('../framework/cli-test');
 
 // A common VM used by multiple tests
@@ -60,10 +61,12 @@ describe('cli', function() {
     describe('Vm:', function() {
       it('Shutdown and start', function(done) {
         createVM(function() {
-          suite.execute('vm shutdown %s --json', vmName, function(result) {
+		  var cmd = util.format('vm shutdown %s --json', vmName).split(' ');
+          testUtils.executeCommand( suite, 5, cmd, function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(function() {
-              suite.execute('vm start %s --json', vmName, function(result) {
+			   cmd = util.format('vm start %s --json', vmName).split(' ');
+              testUtils.executeCommand( suite, 5, cmd, function(result) {
                 result.exitStatus.should.equal(0);
                 done();
               });
@@ -74,7 +77,8 @@ describe('cli', function() {
 
       // VM Restart
       it('Restart', function(done) {
-        suite.execute('vm restart  %s --json', vmName, function(result) {
+	    cmd = util.format('vm restart  %s --json', vmName).split(' ');
+        testUtils.executeCommand( suite, 5, cmd, function(result) {
           result.exitStatus.should.equal(0);
           done();
         });
@@ -83,8 +87,10 @@ describe('cli', function() {
 
     function createVM(callback) {
       getImageName('Linux', function(imagename) {
-        suite.execute('vm create %s %s %s %s -l %s --json', vmName, imagename, username, password, location,
-          function(result) {
+	    var cmd = util.format('vm create %s %s %s %s --json', vmName, imagename, username, password).split(' ');
+		cmd.push('-l');
+		cmd.push(location);
+        testUtils.executeCommand( suite, 5, cmd, function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(callback, timeout);
           });
@@ -94,7 +100,7 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      suite.execute(cmd, function(result) {
+      testUtils.executeCommand( suite, 5, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {
@@ -113,7 +119,7 @@ describe('cli', function() {
       else {
         var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
         setTimeout(function() {
-          suite.execute(cmd, function(result) {
+          testUtils.executeCommand( suite, 5, cmd, function(result) {
             result.exitStatus.should.equal(0);
             return callback();
           });

@@ -35,8 +35,9 @@ describe('cli', function() {
     var customVmName;
     var fileName = 'customdata',
       certFile,
-	  timeout,
+      timeout,
       location,
+	  retry,
       vmsize = 'small',
       sshPort = '223';
 
@@ -58,9 +59,10 @@ describe('cli', function() {
     beforeEach(function(done) {
       suite.setupTest(function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
-		customVmName = suite.isMocked ? 'xplattestvmcustdata' : suite.generateId(vmPrefix, null) + 'cdata';
+        customVmName = suite.isMocked ? 'xplattestvmcustdata' : suite.generateId(vmPrefix, null) + 'cdata';
         certFile = process.env.SSHCERT;
-		timeout = suite.isMocked ? 0 : 5000;
+        timeout = suite.isMocked ? 0 : 5000;
+		retry = 5;
         done();
       });
     });
@@ -70,7 +72,7 @@ describe('cli', function() {
         if (vm.Created && vm.Delete) {
           setTimeout(function() {
             var cmd = util.format('vm delete %s -b -q --json', vm.Name).split(' ');
-            suite.execute(cmd, function(result) {
+             testUtils.executeCommand(suite, 5, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -92,25 +94,29 @@ describe('cli', function() {
       it('with custom data', function(done) {
         getImageName('Linux', function(vmImgName) {
           generateFile(fileName, null, 'nodejs,python,wordpress');
-          suite.execute('vm create -e %s -z %s --ssh-cert %s --no-ssh-password %s %s testuser Collabera@01 -l %s -d %s --json --verbose',
-            sshPort, vmsize, certFile, customVmName, vmImgName, location, fileName, function(result) {
-              result.exitStatus.should.equal(0);
-              var verboseString = result.text;
-              var iPosCustom = verboseString.indexOf('customdata');
-              iPosCustom.should.not.equal(-1);
-              fs.unlinkSync(fileName);
-              vmToUse.Name = customVmName;
-              vmToUse.Created = true;
-              vmToUse.Delete = true;
-              done();
-            });
+          var cmd = util.format('vm create -e %s -z %s --ssh-cert %s --no-ssh-password %s %s testuser Collabera@01 -d %s --json --verbose',
+            sshPort, vmsize, certFile, customVmName, vmImgName, fileName).split(' ');
+			cmd.push('-l');
+			cmd.push(location);
+          testUtils.executeCommand(suite, 5, cmd, function(result) {
+            result.exitStatus.should.equal(0);
+            var verboseString = result.text;
+            var iPosCustom = verboseString.indexOf('customdata');
+            iPosCustom.should.not.equal(-1);
+            fs.unlinkSync(fileName);
+            vmToUse.Name = customVmName;
+            vmToUse.Created = true;
+            vmToUse.Delete = true;
+            done();
+          });
         });
       });
     });
 
     // Get name of an image of the given category
     function getImageName(category, callBack) {
-      suite.execute('vm image list --json', function(result) {
+      var cmd = util.format('vm image list --json').split(' ');
+      testUtils.executeCommand(suite, 5, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {

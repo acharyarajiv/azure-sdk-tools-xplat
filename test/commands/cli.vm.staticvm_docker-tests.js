@@ -21,244 +21,243 @@ var homePath = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOM
 var suite;
 var testPrefix = 'cli.vm.staticvm_docker-tests';
 var requiredEnvironment = [{
-		name : 'AZURE_VM_TEST_LOCATION',
-		defaultValue : 'West US'
-	}
-];
+  name: 'AZURE_VM_TEST_LOCATION',
+  defaultValue: 'West US'
+}];
 
 var currentRandom = 0;
 
-describe('cli', function () {
-	describe('vm', function () {
-		var vmName,
-		dockerCertDir,
-		dockerCerts,
-		location;
+describe('cli', function() {
+  describe('vm', function() {
+    var vmName,
+      dockerCertDir,
+      dockerCerts,
+      location;
 
-		var vmToUse = {
-			Name : null,
-			Created : false,
-			Delete : false
-		};
+    var vmToUse = {
+      Name: null,
+      Created: false,
+      Delete: false
+    };
 
-		before(function (done) {
-			suite = new CLITest(testPrefix, requiredEnvironment);
-			suite.setupSuite(done);
-		});
+    before(function(done) {
+      suite = new CLITest(testPrefix, requiredEnvironment);
+      suite.setupSuite(done);
+    });
 
-		after(function (done) {
-			suite.teardownSuite(done);
-		});
+    after(function(done) {
+      suite.teardownSuite(done);
+    });
 
-		beforeEach(function (done) {
-			suite.setupTest(function () {
-				location = process.env.AZURE_VM_TEST_LOCATION;
-				vmName = process.env.TEST_VM_NAME;
-				timeout = suite.isMocked ? 0 : 12000;
-				done();
-			});
-		});
+    beforeEach(function(done) {
+      suite.setupTest(function() {
+        location = process.env.AZURE_VM_TEST_LOCATION;
+        vmName = process.env.TEST_VM_NAME;
+        timeout = suite.isMocked ? 0 : 12000;
+        done();
+      });
+    });
 
-		afterEach(function (done) {
-			function deleteUsedVM(vm, callback) {
-				if (vm.Created && vm.Delete) {
-					setTimeout(function () {
-						suite.execute('vm delete %s -b --quiet --json', vm.Name, function (result) {
-							result.exitStatus.should.equal(0);
-							vm.Name = null;
-							vm.Created = vm.Delete = false;
-							return callback();
-						});
-					}, timeout);
-				} else {
-					return callback();
-				}
-			}
+    afterEach(function(done) {
+      function deleteUsedVM(vm, callback) {
+        if (vm.Created && vm.Delete) {
+          setTimeout(function() {
+            suite.execute('vm delete %s -b --quiet --json', vm.Name, function(result) {
+              result.exitStatus.should.equal(0);
+              vm.Name = null;
+              vm.Created = vm.Delete = false;
+              return callback();
+            });
+          }, timeout);
+        } else {
+          return callback();
+        }
+      }
 
-			function deleteDockerCertificates() {
-				if (!dockerCertDir || !dockerCerts) {
-					return;
-				}
+      function deleteDockerCertificates() {
+        if (!dockerCertDir || !dockerCerts) {
+          return;
+        }
 
-				fs.exists(dockerCertDir, function (exists) {
-					if (!exists) {
-						return;
-					}
+        fs.exists(dockerCertDir, function(exists) {
+          if (!exists) {
+            return;
+          }
 
-					fs.unlinkSync(dockerCerts.caKey);
-					fs.unlinkSync(dockerCerts.ca);
-					fs.unlinkSync(dockerCerts.serverKey);
-					fs.unlinkSync(dockerCerts.server);
-					fs.unlinkSync(dockerCerts.serverCert);
-					fs.unlinkSync(dockerCerts.clientKey);
-					fs.unlinkSync(dockerCerts.client);
-					fs.unlinkSync(dockerCerts.clientCert);
-					fs.unlinkSync(dockerCerts.extfile);
-					fs.rmdirSync(dockerCertDir);
-				});
-			}
+          fs.unlinkSync(dockerCerts.caKey);
+          fs.unlinkSync(dockerCerts.ca);
+          fs.unlinkSync(dockerCerts.serverKey);
+          fs.unlinkSync(dockerCerts.server);
+          fs.unlinkSync(dockerCerts.serverCert);
+          fs.unlinkSync(dockerCerts.clientKey);
+          fs.unlinkSync(dockerCerts.client);
+          fs.unlinkSync(dockerCerts.clientCert);
+          fs.unlinkSync(dockerCerts.extfile);
+          fs.rmdirSync(dockerCertDir);
+        });
+      }
 
-			deleteUsedVM(vmToUse, function () {
-				suite.teardownTest(done);
-				deleteDockerCertificates();
-			});
-		});
+      deleteUsedVM(vmToUse, function() {
+        suite.teardownTest(done);
+        deleteDockerCertificates();
+      });
+    });
 
-		describe('Vm Create: ', function () {
-			it('Create Docker VM with staticip should pass', function (done) {
-				dockerCertDir = path.join(homePath, '.docker');
-				var dockerPort = 4243;
+    describe('Vm Create: ', function() {
+      it('Create Docker VM with staticip should pass', function(done) {
+        dockerCertDir = path.join(homePath, '.docker');
+        var dockerPort = 4243;
 
-				getImageName('Linux', function (ImageName) {
-					getVnet('Created', function (virtualnetName, affinityName, staticIpToCreate, staticIpToSet) {
-						suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" -a %s --static-ip %s --virtual-network-name %s --json',
-							vmName, ImageName, affinityName, staticIpToSet, virtualnetName, function (result) {
-							result.exitStatus.should.equal(0);
-							suite.execute('vm show %s --json', vmName, function (result) {
-								result.exitStatus.should.equal(0);
-								var certifiatesExist = checkForDockerCertificates(dockerCertDir);
-								certifiatesExist.should.be.true;
-								var cratedVM = JSON.parse(result.text);
-								var dockerPortExists = checkForDockerPort(cratedVM, dockerPort);
-								dockerPortExists.should.be.true;
+        getImageName('Linux', function(ImageName) {
+          getVnet('Created', function(virtualnetName, affinityName, staticIpToCreate, staticIpToSet) {
+            suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" -a %s --static-ip %s --virtual-network-name %s --json',
+              vmName, ImageName, affinityName, staticIpToSet, virtualnetName, function(result) {
+                result.exitStatus.should.equal(0);
+                suite.execute('vm show %s --json', vmName, function(result) {
+                  result.exitStatus.should.equal(0);
+                  var certifiatesExist = checkForDockerCertificates(dockerCertDir);
+                  certifiatesExist.should.be.true;
+                  var cratedVM = JSON.parse(result.text);
+                  var dockerPortExists = checkForDockerPort(cratedVM, dockerPort);
+                  dockerPortExists.should.be.true;
 
-								cratedVM.VMName.should.equal(vmName);
-								vmToUse.Name = vmName;
-								vmToUse.Created = true;
-								vmToUse.Delete = true;
-								setTimeout(done, timeout);
-							});
-						});
-					});
-				});
-			});
+                  cratedVM.VMName.should.equal(vmName);
+                  vmToUse.Name = vmName;
+                  vmToUse.Created = true;
+                  vmToUse.Delete = true;
+                  setTimeout(done, timeout);
+                });
+              });
+          });
+        });
+      });
 
-		});
+    });
 
-		// Get name of an image of the given category
-		function getImageName(category, callBack) {
-			var cmd = util.format('vm image list --json').split(' ');
-			suite.execute(cmd, function (result) {
-				result.exitStatus.should.equal(0);
-				var imageList = JSON.parse(result.text);
-				imageList.some(function (image) {
-					if ((image.operatingSystemType || image.oSDiskConfiguration.operatingSystem).toLowerCase() === category.toLowerCase() && image.category.toLowerCase() === 'public') {
-						vmImgName = image.name;
-						return true;
-					}
-				});
-				callBack(vmImgName);
-			});
-		}
+    // Get name of an image of the given category
+    function getImageName(category, callBack) {
+      var cmd = util.format('vm image list --json').split(' ');
+      suite.execute(cmd, function(result) {
+        result.exitStatus.should.equal(0);
+        var imageList = JSON.parse(result.text);
+        imageList.some(function(image) {
+          if ((image.operatingSystemType || image.oSDiskConfiguration.operatingSystem).toLowerCase() === category.toLowerCase() && image.category.toLowerCase() === 'public') {
+            vmImgName = image.name;
+            return true;
+          }
+        });
+        callBack(vmImgName);
+      });
+    }
 
-		function getVnet(status, callback) {
-			var cmd;
-			if (getVnet.vnetName) {
-				callback(getVnet.vnetName, getVnet.affinityName, getVnet.staticIpToCreate, getVnet.staticIpToSet);
-			} else {
-				cmd = util.format('network vnet list --json').split(' ');
-				suite.execute(cmd, function (result) {
-					result.exitStatus.should.equal(0);
-					var vnetName = JSON.parse(result.text);
-					var found = vnetName.some(function (vnet) {
-							if (vnet.state === status && vnet.affinityGroup !== undefined) {
-								getVnet.vnetName = vnet.name;
-								getVnet.affinityName = vnet.affinityGroup;
-								var address = vnet.addressSpace.addressPrefixes[0];
-								var addressSplit = address.split('/');
-								var staticIpToCreate = addressSplit[0];
-								var n = staticIpToCreate.substring(0, staticIpToCreate.lastIndexOf('.') + 1);
-								var staticIpToSet = n.concat(addressSplit[1]);
-								getVnet.staticIpToCreate = staticIpToCreate;
-								getVnet.staticIpToSet = staticIpToSet;
-								return true;
-							}
-						});
+    function getVnet(status, callback) {
+      var cmd;
+      if (getVnet.vnetName) {
+        callback(getVnet.vnetName, getVnet.affinityName, getVnet.staticIpToCreate, getVnet.staticIpToSet);
+      } else {
+        cmd = util.format('network vnet list --json').split(' ');
+        suite.execute(cmd, function(result) {
+          result.exitStatus.should.equal(0);
+          var vnetName = JSON.parse(result.text);
+          var found = vnetName.some(function(vnet) {
+            if (vnet.state === status && vnet.affinityGroup !== undefined) {
+              getVnet.vnetName = vnet.name;
+              getVnet.affinityName = vnet.affinityGroup;
+              var address = vnet.addressSpace.addressPrefixes[0];
+              var addressSplit = address.split('/');
+              var staticIpToCreate = addressSplit[0];
+              var n = staticIpToCreate.substring(0, staticIpToCreate.lastIndexOf('.') + 1);
+              var staticIpToSet = n.concat(addressSplit[1]);
+              getVnet.staticIpToCreate = staticIpToCreate;
+              getVnet.staticIpToSet = staticIpToSet;
+              return true;
+            }
+          });
 
-					if (!found) {
-						getAffinityGroup(location, function (affinGrpName) {
-							cmd = util.format('network vnet create %s -a %s --json', vnetName, affinGrpName).split(' ');
-							suite.execute(cmd, function (result) {
-								result.exitStatus.should.equal(0);
-								getVnet.vnetName = vnetName;
-								getVnet.affinityName = affinGrpName;
-								var address = vnet.addressSpace.addressPrefixes[0];
-								var addressSplit = address.split('/');
-								var staticIpToCreate = addressSplit[0];
-								var n = staticIpToCreate.substring(0, staticIpToCreate.lastIndexOf('.') + 1);
-								var staticIpToSet = n.concat(addressSplit[1]);
-								getVnet.staticIpToCreate = staticIpToCreate;
-								getVnet.staticIpToSet = staticIpToSet;
-								callback(getVnet.vnetName, getVnet.affinityName, getVnet.staticIpToCreate, getVnet.staticIpToSet);
-							});
-						});
-					} else {
-						callback(getVnet.vnetName, getVnet.affinityName, getVnet.staticIpToCreate, getVnet.staticIpToSet);
-					}
-				});
-			}
-		}
+          if (!found) {
+            getAffinityGroup(location, function(affinGrpName) {
+              cmd = util.format('network vnet create %s -a %s --json', vnetName, affinGrpName).split(' ');
+              suite.execute(cmd, function(result) {
+                result.exitStatus.should.equal(0);
+                getVnet.vnetName = vnetName;
+                getVnet.affinityName = affinGrpName;
+                var address = vnet.addressSpace.addressPrefixes[0];
+                var addressSplit = address.split('/');
+                var staticIpToCreate = addressSplit[0];
+                var n = staticIpToCreate.substring(0, staticIpToCreate.lastIndexOf('.') + 1);
+                var staticIpToSet = n.concat(addressSplit[1]);
+                getVnet.staticIpToCreate = staticIpToCreate;
+                getVnet.staticIpToSet = staticIpToSet;
+                callback(getVnet.vnetName, getVnet.affinityName, getVnet.staticIpToCreate, getVnet.staticIpToSet);
+              });
+            });
+          } else {
+            callback(getVnet.vnetName, getVnet.affinityName, getVnet.staticIpToCreate, getVnet.staticIpToSet);
+          }
+        });
+      }
+    }
 
-		function checkForDockerPort(cratedVM, dockerPort) {
-			var result = false;
-			if (cratedVM.Network && cratedVM.Network.Endpoints) {
-				cratedVM.Network.Endpoints.forEach(function (element, index, array) {
-					if (element.name === 'docker' && element.port === dockerPort) {
-						result = true;
-					}
-				});
-			}
+    function checkForDockerPort(cratedVM, dockerPort) {
+      var result = false;
+      if (cratedVM.Network && cratedVM.Network.Endpoints) {
+        cratedVM.Network.Endpoints.forEach(function(element, index, array) {
+          if (element.name === 'docker' && element.port === dockerPort) {
+            result = true;
+          }
+        });
+      }
 
-			return result;
-		}
+      return result;
+    }
 
-		function checkForDockerCertificates(dockerCertDir, cb) {
-			dockerCerts = {
-				caKey : path.join(dockerCertDir, 'ca-key.pem'),
-				ca : path.join(dockerCertDir, 'ca.pem'),
-				serverKey : path.join(dockerCertDir, 'server-key.pem'),
-				server : path.join(dockerCertDir, 'server.csr'),
-				serverCert : path.join(dockerCertDir, 'server-cert.pem'),
-				clientKey : path.join(dockerCertDir, 'key.pem'),
-				client : path.join(dockerCertDir, 'client.csr'),
-				clientCert : path.join(dockerCertDir, 'cert.pem'),
-				extfile : path.join(dockerCertDir, 'extfile.cnf')
-			};
+    function checkForDockerCertificates(dockerCertDir, cb) {
+      dockerCerts = {
+        caKey: path.join(dockerCertDir, 'ca-key.pem'),
+        ca: path.join(dockerCertDir, 'ca.pem'),
+        serverKey: path.join(dockerCertDir, 'server-key.pem'),
+        server: path.join(dockerCertDir, 'server.csr'),
+        serverCert: path.join(dockerCertDir, 'server-cert.pem'),
+        clientKey: path.join(dockerCertDir, 'key.pem'),
+        client: path.join(dockerCertDir, 'client.csr'),
+        clientCert: path.join(dockerCertDir, 'cert.pem'),
+        extfile: path.join(dockerCertDir, 'extfile.cnf')
+      };
 
-			if (!fs.existsSync(dockerCerts.caKey)) {
-				return false;
-			}
+      if (!fs.existsSync(dockerCerts.caKey)) {
+        return false;
+      }
 
-			if (!fs.existsSync(dockerCerts.ca)) {
-				return false;
-			}
+      if (!fs.existsSync(dockerCerts.ca)) {
+        return false;
+      }
 
-			if (!fs.existsSync(dockerCerts.serverKey)) {
-				return false;
-			}
+      if (!fs.existsSync(dockerCerts.serverKey)) {
+        return false;
+      }
 
-			if (!fs.existsSync(dockerCerts.server)) {
-				return false;
-			}
+      if (!fs.existsSync(dockerCerts.server)) {
+        return false;
+      }
 
-			if (!fs.existsSync(dockerCerts.serverCert)) {
-				return false;
-			}
+      if (!fs.existsSync(dockerCerts.serverCert)) {
+        return false;
+      }
 
-			if (!fs.existsSync(dockerCerts.clientKey)) {
-				return false;
-			}
+      if (!fs.existsSync(dockerCerts.clientKey)) {
+        return false;
+      }
 
-			if (!fs.existsSync(dockerCerts.client)) {
-				return false;
-			}
+      if (!fs.existsSync(dockerCerts.client)) {
+        return false;
+      }
 
-			if (!fs.existsSync(dockerCerts.clientCert)) {
-				return false;
-			}
+      if (!fs.existsSync(dockerCerts.clientCert)) {
+        return false;
+      }
 
-			return true;
-		}
+      return true;
+    }
 
-	});
+  });
 });

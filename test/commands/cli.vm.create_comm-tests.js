@@ -14,6 +14,7 @@
  */
 var should = require('should');
 var util = require('util');
+var testUtils = require('../util/util');
 var sinon = require('sinon');
 var crypto = require('crypto');
 var CLITest = require('../framework/cli-test');
@@ -37,6 +38,7 @@ describe('cli', function() {
     var location,
       communityImageId,
       timeout,
+      retry,
       customVmName = 'xplattestcommvm';
 
     var vmToUse = {
@@ -67,6 +69,7 @@ describe('cli', function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
         communityImageId = process.env.AZURE_COMMUNITY_IMAGE_ID;
         timeout = suite.isMocked ? 0 : 5000;
+        retry = 5;
         done();
       });
     });
@@ -76,7 +79,7 @@ describe('cli', function() {
         if (vm.Created && vm.Delete) {
           setTimeout(function() {
             var cmd = util.format('vm delete %s -b -q --json', vm.Name).split(' ');
-            suite.execute(cmd, function(result) {
+            testUtils.executeCommand(suite, 5, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -96,14 +99,15 @@ describe('cli', function() {
     //Create vm with custom data
     describe('Create:', function() {
       it('with community data', function(done) {
-        suite.execute('vm create -o %s %s testuser Collabera@01 -l %s  --json --verbose',
-          customVmName, communityImageId, location, function(result) {
-            result.exitStatus.should.equal(0);
-            vmToUse.Name = customVmName;
-            vmToUse.Created = true;
-            vmToUse.Delete = true;
-            done();
-          });
+        var cmd = util.format('vm create -o %s %s testuser Collabera@01 -l %s  --json --verbose',
+          customVmName, communityImageId, location).split(' ');
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
+          result.exitStatus.should.equal(0);
+          vmToUse.Name = customVmName;
+          vmToUse.Created = true;
+          vmToUse.Delete = true;
+          done();
+        });
       });
     });
   });

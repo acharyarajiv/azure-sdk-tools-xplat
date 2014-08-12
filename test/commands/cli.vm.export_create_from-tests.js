@@ -14,7 +14,8 @@
  */
 var should = require('should');
 var util = require('util');
-var fs = require('fs');
+var fs = require('fs')
+var testUtils = require('../util/util');;
 var CLITest = require('../framework/cli-test');
 
 var suite;
@@ -67,7 +68,7 @@ describe('cli', function() {
             util.format('vm delete %s -b -q --json', vm.Name).split(' ') :
             util.format('vm delete %s -q --json', vm.Name).split(' ');
           setTimeout(function() {
-            suite.execute(cmd, function(result) {
+            testUtils.executeCommand(suite, 5, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -89,7 +90,8 @@ describe('cli', function() {
 
       it('export and delete', function(done) {
         createVM(function() {
-          suite.execute('vm export %s %s  --json', vmName, file, function(result) {
+          var cmd = util.format('vm export %s %s  --json', vmName, file).split(' ');
+          testUtils.executeCommand(suite, 5, cmd, function(result) {
             result.exitStatus.should.equal(0);
             fs.existsSync(file).should.equal(true);
             vmToUse.Delete = true;
@@ -106,7 +108,10 @@ describe('cli', function() {
         waitForDiskRelease(diskName, function() {
           var jsonstr = JSON.stringify(obj);
           fs.writeFileSync(file, jsonstr);
-          suite.execute('vm create-from %s %s --json -l %s', vmName, file, location, function(result) {
+          var cmd = util.format('vm create-from %s %s --json', vmName, file).split(' ');
+          cmd.push('-l');
+          cmd.push(location);
+          testUtils.executeCommand(suite, 5, cmd, function(result) {
             result.exitStatus.should.equal(0);
             vmToUse.Name = vmName;
             vmToUse.Created = true;
@@ -122,7 +127,8 @@ describe('cli', function() {
     //check if disk is released from vm and then if released call callback or else wait till it is released
     function waitForDiskRelease(vmDisk, callback) {
       var vmDiskObj;
-      suite.execute('vm disk show %s --json', vmDisk, function(result) {
+      var cmd = util.format('vm disk show %s --json', vmDisk).split(' ');
+      testUtils.executeCommand(suite, 5, cmd, function(result) {
         result.exitStatus.should.equal(0);
         vmDiskObj = JSON.parse(result.text);
         if (vmDiskObj.usageDetails && vmDiskObj.usageDetails.deploymentName) {
@@ -137,20 +143,22 @@ describe('cli', function() {
 
     function createVM(callback) {
       getImageName('Linux', function(imagename) {
-        suite.execute('vm create %s %s %s %s -l %s --json', vmName, imagename, username, password, location,
-          function(result) {
-            result.exitStatus.should.equal(0);
-            vmToUse.Name = vmName;
-            vmToUse.Created = true;
-            setTimeout(callback, timeout);
-          });
+        var cmd = util.format('vm create %s %s %s %s --json', vmName, imagename, username, password).split(' ');
+        cmd.push('-l');
+        cmd.push(location);
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
+          result.exitStatus.should.equal(0);
+          vmToUse.Name = vmName;
+          vmToUse.Created = true;
+          setTimeout(callback, timeout);
+        });
       });
     }
 
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      suite.execute(cmd, function(result) {
+      testUtils.executeCommand(suite, 5, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {

@@ -14,6 +14,7 @@
  */
 var should = require('should');
 var util = require('util');
+var testUtils = require('../util/util');
 var CLITest = require('../framework/cli-test');
 
 var suite;
@@ -36,7 +37,7 @@ describe('cli', function() {
       username = 'azureuser',
       password = 'PassW0rd$',
       captureImg = 'xplattestcapimg',
-      timeout;
+      timeout, retry;
 
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
@@ -53,6 +54,7 @@ describe('cli', function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
         timeout = suite.isMocked ? 0 : 10000;
         certFile = process.env.SSHCERT;
+        retry = 5;
         done();
       });
     });
@@ -65,13 +67,16 @@ describe('cli', function() {
     describe('Vm:', function() {
       it('shutdown and capture', function(done) {
         createVM(function() {
-          suite.execute('vm shutdown %s --json', vmName, function(result) {
+          var cmd = util.format('vm shutdown %s --json', vmName).split(' ');
+          testUtils.executeCommand(suite, 5, cmd, function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(function() {
-              suite.execute('vm capture %s %s %s --json --delete', vmName, captureImg, function(result) {
+              cmd = util.format('vm capture %s %s --json --delete', vmName, captureImg).split(' ');
+              testUtils.executeCommand(suite, 5, cmd, function(result) {
                 result.exitStatus.should.equal(0);
                 setTimeout(function() {
-                  suite.execute('service delete %s -q --json', vmName, function(result) {
+                  cmd = util.format('service delete %s -q --json', vmName, captureImg).split(' ');
+                  testUtils.executeCommand(suite, 5, cmd, function(result) {
                     result.exitStatus.should.equal(0);
                     done();
                   });
@@ -86,7 +91,8 @@ describe('cli', function() {
     // VM Capture into a disk
     describe('Captured Images:', function() {
       it('should be listed in images list and delete', function(done) {
-        suite.execute('vm image list --json', function(result) {
+        var cmd = util.format('vm image list --json').split(' ');
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vmImagelist = JSON.parse(result.text);
           var imagefound = false;
@@ -97,7 +103,8 @@ describe('cli', function() {
           });
           imagefound.should.true;
           setTimeout(function() {
-            suite.execute('vm image delete -b %s --json', captureImg, function(result) {
+            cmd = util.format('vm image delete -b %s --json', captureImg).split(' ');
+            testUtils.executeCommand(suite, 5, cmd, function(result) {
               result.exitStatus.should.equal(0);
               setTimeout(done, timeout);
             });
@@ -108,18 +115,20 @@ describe('cli', function() {
 
     function createVM(callback) {
       getImageName('Linux', function(imagename) {
-        suite.execute('vm create --ssh-cert %s %s %s %s %s -l %s --json', certFile, vmName, imagename, username, password, location,
-          function(result) {
-            result.exitStatus.should.equal(0);
-            setTimeout(callback, timeout);
-          });
+        var cmd = util.format('vm create --ssh-cert %s %s %s %s %s --json', certFile, vmName, imagename, username, password).split(' ');
+        cmd.push('-l');
+        cmd.push(location);
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
+          result.exitStatus.should.equal(0);
+          setTimeout(callback, timeout);
+        });
       });
     }
 
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      suite.execute(cmd, function(result) {
+      testUtils.executeCommand(suite, 5, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {

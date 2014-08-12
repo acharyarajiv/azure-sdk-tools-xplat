@@ -146,3 +146,20 @@ exports.getTemplateInfo = function (suite, keyword, callback) {
     }
   });
 };
+
+exports.executeCommand = function(suite, retry, cmd, callback) {
+  suite.execute(cmd, function (result) {
+    if (result.exitStatus === 1) {
+      if ((result.errorText.indexOf('ECONNRESET') > -1 ||
+          result.errorText.indexOf('ConflictError') > -1) && retry--) {
+        this.executeCommand(suite, retry, cmd, callback);
+      } else {
+        //callback with error
+        //here result can be checked for existstatus but dev will never know what command threw error
+        //while looking at error message
+        callback(result);
+      }
+    } else
+      callback(result);
+  });
+};

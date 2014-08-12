@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 var should = require('should');
+var util = require('util');
+var testUtils = require('../util/util');
 var CLITest = require('../framework/cli-test');
 
 var suite;
@@ -43,7 +45,8 @@ describe('cli', function() {
 
       //location list
       it('Location List', function(done) {
-        suite.execute('vm location list --json', function(result) {
+        var cmd = util.format('vm location list --json').split(' ');
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
           result.exitStatus.should.equal(0);
           result.text.should.not.empty;
           done();
@@ -51,12 +54,14 @@ describe('cli', function() {
       });
 
       it('List and Show', function(done) {
-        suite.execute('vm list --json', function(result) {
+        var cmd = util.format('vm list --json').split(' ');
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vmList = JSON.parse(result.text);
           vmList.length.should.be.above(0);
           vmName = vmList[0].VMName;
-          suite.execute('vm show %s --json', vmName, function(result) {
+          cmd = util.format('vm show %s --json').split(' ');
+          testUtils.executeCommand(suite, 5, cmd, vmName, function(result) {
             result.exitStatus.should.equal(0);
             var vmObj = JSON.parse(result.text);
             vmObj.VMName.should.equal(vmName);

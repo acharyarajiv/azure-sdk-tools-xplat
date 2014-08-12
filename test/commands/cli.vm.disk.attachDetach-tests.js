@@ -14,6 +14,7 @@
  */
 var should = require('should');
 var util = require('util');
+var testUtils = require('../util/util');
 var CLITest = require('../framework/cli-test');
 
 var suite;
@@ -66,11 +67,13 @@ describe('cli', function() {
       it('Attach & Detach', function(done) {
         createDisk(function() {
           createVM(function() {
-            suite.execute('vm disk attach %s %s --json', vmName, diskName, function(result) {
+            var cmd = util.format('vm disk attach %s %s --json', vmName, diskName).split(' ');
+            testUtils.executeCommand(suite, 5, cmd, function(result) {
               result.exitStatus.should.equal(0);
               waitForDiskOp(vmName, true, function(vmObj) {
                 vmObj.DataDisks[0].name.should.equal(diskName);
-                suite.execute('vm disk detach %s 0 --json', vmName, function(result) {
+                cmd = util.format('vm disk detach %s 0 --json', vmName).split(' ');
+                testUtils.executeCommand(suite, 5, cmd, function(result) {
                   result.exitStatus.should.equal(0);
                   waitForDiskOp(vmName, false, function(vmObj) {
                     done();
@@ -86,7 +89,8 @@ describe('cli', function() {
     //check if disk is attached or de attached and then call the callback
     function waitForDiskOp(vmName, DiskAttach, callback) {
       var vmObj;
-      suite.execute('vm show %s --json', vmName, function(result) {
+      var cmd = util.format('vm show %s --json', vmName).split(' ');
+      testUtils.executeCommand(suite, 5, cmd, function(result) {
         result.exitStatus.should.equal(0);
         vmObj = JSON.parse(result.text);
         if ((!DiskAttach && !vmObj.DataDisks[0]) || (DiskAttach && vmObj.DataDisks[0])) {
@@ -101,11 +105,13 @@ describe('cli', function() {
 
     function createVM(callback) {
       getImageName('Linux', function(imagename) {
-        suite.execute('vm create %s %s %s %s -l %s --json', vmName, imagename, username, password, location,
-          function(result) {
-            result.exitStatus.should.equal(0);
-            setTimeout(callback, timeout);
-          });
+        var cmd = util.format('vm create %s %s %s %s --json', vmName, imagename, username, password).split(' ');
+        cmd.push('-l');
+        cmd.push(location);
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
+          result.exitStatus.should.equal(0);
+          setTimeout(callback, timeout);
+        });
       });
     }
 
@@ -114,8 +120,10 @@ describe('cli', function() {
         var diskSourcePath = diskObj.mediaLinkUri;
         var domainUrl = 'http://' + diskSourcePath.split('/')[2];
         var blobUrl = domainUrl + '/disks/' + diskName;
-
-        suite.execute('vm disk create %s %s --location %s -u %s --json', diskName, diskSourcePath, location, blobUrl, function(result) {
+        var cmd = util.format('vm disk create %s %s -u %s --json', diskName, diskSourcePath, blobUrl).split(' ');
+		cmd.push('-l');
+        cmd.push(location);
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
           result.exitStatus.should.equal(0);
           callback();
         });
@@ -125,7 +133,7 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      suite.execute(cmd, function(result) {
+      testUtils.executeCommand(suite, 5, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {
@@ -140,18 +148,19 @@ describe('cli', function() {
 
     // Get name of an disk of the given category
     function getDiskName(OS, callBack) {
-      suite.execute('vm disk list --json', function(result) {
-        result.exitStatus.should.equal(0);
-        var diskList = JSON.parse(result.text);
-        diskList.some(function(disk) {
-          if ((disk.operatingSystemType && disk.operatingSystemType.toLowerCase() === OS.toLowerCase()) &&
-            (disk.location && disk.location.toLowerCase() === location.toLowerCase())) {
-            diskObj = disk;
-            return true;
-          }
+      var cmd = util.format('vm disk list --json').split(' ');
+        testUtils.executeCommand(suite, 5, cmd, function(result) {
+          result.exitStatus.should.equal(0);
+          var diskList = JSON.parse(result.text);
+          diskList.some(function(disk) {
+            if ((disk.operatingSystemType && disk.operatingSystemType.toLowerCase() === OS.toLowerCase()) &&
+              (disk.location && disk.location.toLowerCase() === location.toLowerCase())) {
+              diskObj = disk;
+              return true;
+            }
+          });
+          callBack(diskObj);
         });
-        callBack(diskObj);
-      });
     }
 
     function deleteDisk(callback) {
@@ -160,7 +169,7 @@ describe('cli', function() {
       else {
         var cmd = util.format('vm disk delete %s -b --json', diskName).split(' ');
         setTimeout(function() {
-          suite.execute(cmd, function(result) {
+          testUtils.executeCommand(suite, 5, cmd, function(result) {
             result.exitStatus.should.equal(0);
             return callback();
           });
@@ -174,7 +183,7 @@ describe('cli', function() {
       else {
         var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
         setTimeout(function() {
-          suite.execute(cmd, function(result) {
+          testUtils.executeCommand(suite, 5, cmd, function(result) {
             result.exitStatus.should.equal(0);
             return callback();
           });
