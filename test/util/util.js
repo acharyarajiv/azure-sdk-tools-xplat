@@ -148,11 +148,15 @@ exports.getTemplateInfo = function (suite, keyword, callback) {
 };
 
 exports.executeCommand = function(suite, retry, cmd, callback) {
+  var self = this;
   suite.execute(cmd, function (result) {
     if (result.exitStatus === 1) {
-      if ((result.errorText.indexOf('ECONNRESET') > -1 ||
-          result.errorText.indexOf('ConflictError') > -1) && retry--) {
-        this.executeCommand(suite, retry, cmd, callback);
+      if ((result.errorText.indexOf('ECONNRESET') || 
+	    result.errorText.indexOf('ConflictError') ||
+		result.errorText.indexOf('Please try this operation again late')) > -1 && retry--) {
+        setTimeout(function(){
+			self.executeCommand(suite, retry, cmd, callback);
+		},5000);
       } else {
         //callback with error
         //here result can be checked for existstatus but dev will never know what command threw error
