@@ -14,28 +14,26 @@
  */
 var should = require('should');
 var util = require('util');
+var testUtils = require('../util/util');
 var CLITest = require('../framework/cli-test');
 
 // A common VM used by multiple tests
-
-var vmPrefix = 'clitestvm';
-var vmNames = [];
-
 var suite;
+var vmPrefix = 'clitestvm';
 var testPrefix = 'cli.vm.create_staticvm-tests';
 var requiredEnvironment = [{
   name: 'AZURE_VM_TEST_LOCATION',
   defaultValue: 'West US'
 }];
 
-var currentRandom = 0;
-
 describe('cli', function() {
   describe('vm', function() {
     var vmName,
       location,
       username = 'azureuser',
-      password = 'Collabera@01'
+      password = 'PassW0rd$',
+      retry = 5,
+      timeout;
 
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
@@ -66,11 +64,12 @@ describe('cli', function() {
       it('Create a VM with static ip address', function(done) {
         getImageName('Windows', function(ImageName) {
           getVnet('Created', function(virtualnetName, affinityName, staticIpToCreate, staticIpToSet) {
-            suite.execute('vm create --virtual-network-name %s -n %s --affinity-group %s %s %s %s %s --static-ip %s --json',
-              virtualnetName, vmName, affinityName, vmName, ImageName, username, password, staticIpToCreate, function(result) {
-                result.exitStatus.should.equal(0);
-                done();
-              });
+            var cmd = util.format('vm create --virtual-network-name %s -n %s --affinity-group %s %s %s %s %s --static-ip %s --json',
+              virtualnetName, vmName, affinityName, vmName, ImageName, username, password, staticIpToCreate).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
+              result.exitStatus.should.equal(0);
+              done();
+            });
           });
         });
       });
@@ -79,7 +78,8 @@ describe('cli', function() {
     // VM Restart
     describe('Restart and check:', function() {
       it('Restart', function(done) {
-        suite.execute('vm restart  %s --json', vmName, function(result) {
+        var cmd = util.format('vm restart  %s --json', vmName).split(' ');
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           done();
         });
@@ -87,13 +87,13 @@ describe('cli', function() {
 
       it('Show the description of the vm with set static ip', function(done) {
         getVnet('Created', function(virtualnetName, affinityName, staticipToCreate, staticipToSet) {
-          suite.execute('vm static-ip show %s --json', vmName,
-            function(result) {
-              result.exitStatus.should.equal(0);
-              var vnets = JSON.parse(result.text);
-              vnets.Network.StaticIP.should.equal(staticipToCreate);
-              done();
-            });
+          var cmd = util.format('vm static-ip show %s --json', vmName).split(' ');
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.equal(0);
+            var vnets = JSON.parse(result.text);
+            vnets.Network.StaticIP.should.equal(staticipToCreate);
+            done();
+          });
         });
       });
     });
@@ -101,76 +101,78 @@ describe('cli', function() {
     describe('static ip operations', function() {
       it('Setting the static ip address to the created VM', function(done) {
         getVnet('Created', function(virtualnetName, affinityName, staticipToCreate, staticipToSet) {
-          suite.execute('vm static-ip set %s %s --json', vmName, staticipToSet,
-            function(result) {
-              result.exitStatus.should.equal(0);
-              suite.execute('vm show %s --json', vmName, function(innerresult) {
-                innerresult.exitStatus.should.equal(0);
-                var vmshow = JSON.parse(innerresult.text);
-                vmshow.IPAddress.should.equal(staticipToSet);
-                done();
-              });
+          var cmd = util.format('vm static-ip set %s %s --json', vmName, staticipToSet).split(' ');
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.equal(0);
+            cmd = util.format('vm show %s --json', vmName).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(innerresult) {
+              innerresult.exitStatus.should.equal(0);
+              var vmshow = JSON.parse(innerresult.text);
+              vmshow.IPAddress.should.equal(staticipToSet);
+              done();
             });
+          });
         });
       });
 
       it('Check if the static ip address set is available', function(done) {
         getVnet('Created', function(virtualnetName, affinityName, staticipToCreate, staticipToSet) {
-          suite.execute('network vnet static-ip check %s %s --json', virtualnetName, staticipToSet,
-            function(result) {
-              result.exitStatus.should.equal(0);
-              var vnets = JSON.parse(result.text);
-              vnets.isAvailable.should.equal(false);
-              done();
-            });
+          var cmd = util.format('network vnet static-ip check %s %s --json', virtualnetName, staticipToSet).split(' ');
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.equal(0);
+            var vnets = JSON.parse(result.text);
+            vnets.isAvailable.should.equal(false);
+            done();
+          });
         });
       });
 
       it('Show the description of the vm with set static ip', function(done) {
         getVnet('Created', function(virtualnetName, affinityName, staticipToCreate, staticipToSet) {
-          suite.execute('vm static-ip show %s --json', vmName,
-            function(result) {
-              result.exitStatus.should.equal(0);
-              var vnets = JSON.parse(result.text);
-              vnets.Network.StaticIP.should.equal(staticipToSet);
-              done();
-            });
+          var cmd = util.format('vm static-ip show %s --json', vmName).split(' ');
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.equal(0);
+            var vnets = JSON.parse(result.text);
+            vnets.Network.StaticIP.should.equal(staticipToSet);
+            done();
+          });
         });
       });
 
-      it('Removing the static ip address', function(done) {
-        suite.execute('vm static-ip remove %s --json', vmName,
-          function(result) {
-            result.exitStatus.should.equal(0);
-            done();
-          });
+      it('Removing the static ip address', function(done) {.
+        var cmd = util.format('vm static-ip remove %s --json', vmName).split(' ');
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
+          result.exitStatus.should.equal(0);
+          done();
+        });
       });
     });
 
     describe('negative testcase', function() {
       it('Setting the invalid static ip address', function(done) {
-        suite.execute('vm static-ip set clitestvm2745 ip --json', vmName,
-          function(result) {
-            result.exitStatus.should.equal(1);
-            result.errorText.should.include('The IP address ip is invalid');
-            done();
-          });
+        var cmd = util.format('vm static-ip set clitestvm2745 ip --json', vmName).split(' ');
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
+          result.exitStatus.should.equal(1);
+          result.errorText.should.include('The IP address ip is invalid');
+          done();
+        });
       });
 
       it('Setting the invalid vm name', function(done) {
         getVnet('Created', function(virtualnetName, affinityName, staticipToCreate, staticipToSet) {
-          suite.execute('vm static-ip set abcd %s --json', staticipToSet,
-            function(result) {
-              result.exitStatus.should.equal(1);
-              result.errorText.should.include('No VMs found');
-              done();
-            });
+          var cmd = util.format('vm static-ip set abcd %s --json', staticipToSet).split(' ');
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.equal(1);
+            result.errorText.should.include('No VMs found');
+            done();
+          });
         });
       });
 
       // VM Delete
       it('Delete', function(done) {
-        suite.execute('vm delete %s -b -q --json', vmName, function(result) {
+        var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           done();
         });
@@ -180,7 +182,7 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      suite.execute(cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {
@@ -200,7 +202,7 @@ describe('cli', function() {
         callback(getVnet.vnetName, getVnet.affinityName, getVnet.staticIpToCreate, getVnet.staticIpToSet);
       } else {
         cmd = util.format('network vnet list --json').split(' ');
-        suite.execute(cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vnetName = JSON.parse(result.text);
           var found = vnetName.some(function(vnet) {
@@ -221,7 +223,7 @@ describe('cli', function() {
           if (!found) {
             getAffinityGroup(location, function(affinGrpName) {
               cmd = util.format('network vnet create %s -a %s --json', vnetName, affinGrpName).split(' ');
-              suite.execute(cmd, function(result) {
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
                 result.exitStatus.should.equal(0);
                 getVnet.vnetName = vnetName;
                 getVnet.affinityName = affinGrpName;
@@ -244,10 +246,12 @@ describe('cli', function() {
 
     // Get name of an image of the given category
     function getAffinityGroup(location, callBack) {
+      var cmd;
       if (getAffinityGroup.affinGrpName) {
         callBack(getAffinityGroup.affinGrpName);
       } else {
-        suite.execute('account affinity-group list --json', function(result) {
+        cmd = util.format('account affinity-group list --json').split(' ');
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var affinList = JSON.parse(result.text);
           var found = affinList.some(function(affinGrp) {
@@ -257,12 +261,13 @@ describe('cli', function() {
             }
           });
           if (!found) {
-            suite.execute('account affinity-group create -l %s -e %s -d %s %s --json',
-              location, affinLabel, affinDesc, affinityName, function(result) {
-                result.exitStatus.should.equal(0);
-                getAffinityGroup.affinGrpName = affinityName;
-                callBack(affinityName);
-              });
+            cmd = util.format('account affinity-group create -l %s -e %s -d %s %s --json',
+              location, affinLabel, affinDesc, affinityName).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
+              result.exitStatus.should.equal(0);
+              getAffinityGroup.affinGrpName = affinityName;
+              callBack(affinityName);
+            });
           } else
             callBack(getAffinityGroup.affinGrpName);
         });

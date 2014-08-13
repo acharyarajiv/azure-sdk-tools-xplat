@@ -60,8 +60,8 @@ describe('cli', function() {
           var vmList = JSON.parse(result.text);
           vmList.length.should.be.above(0);
           vmName = vmList[0].VMName;
-          cmd = util.format('vm show %s --json').split(' ');
-          testUtils.executeCommand(suite, retry, cmd, vmName, function(result) {
+          cmd = util.format('vm show %s --json', vmName).split(' ');
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             var vmObj = JSON.parse(result.text);
             vmObj.VMName.should.equal(vmName);

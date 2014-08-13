@@ -39,7 +39,9 @@ describe('cli', function() {
       communityImageId,
       timeout,
       retry,
-      customVmName = 'xplattestcommvm';
+      customVmName = 'xplattestcommvm',
+      username = 'azureuser',
+      password = 'Pa$$word@123';
 
     var vmToUse = {
       Name: null,
@@ -99,8 +101,10 @@ describe('cli', function() {
     //Create vm with custom data
     describe('Create:', function() {
       it('with community data', function(done) {
-        var cmd = util.format('vm create -o %s %s testuser Collabera@01 -l %s  --json --verbose',
-          customVmName, communityImageId, location).split(' ');
+        var cmd = util.format('vm create -o %s %s %s %s --json --verbose',
+          customVmName, communityImageId, username, password).split(' ');
+        cmd.push('-l');
+        cmd.push(location);
         testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           vmToUse.Name = customVmName;

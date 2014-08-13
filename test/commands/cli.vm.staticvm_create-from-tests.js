@@ -14,18 +14,17 @@
  */
 var should = require('should');
 var util = require('util');
-var CLITest = require('../framework/cli-test');
 var fs = require('fs');
-// A common VM used by multiple tests
-var vmPrefix = 'clitestvm';
+var testUtils = require('../util/util');
+var CLITest = require('../framework/cli-test');
+
 var suite;
+var vmPrefix = 'clitestvm';
 var testPrefix = 'cli.vm.staticvm_create-from-tests';
 var requiredEnvironment = [{
   name: 'AZURE_VM_TEST_LOCATION',
   defaultValue: 'West US'
 }];
-
-var currentRandom = 0;
 
 describe('cli', function() {
   describe('vm', function() {
@@ -33,7 +32,9 @@ describe('cli', function() {
       location,
       file = 'vminfo.json',
       username = 'azureuser',
-      password = 'Collabera@01'
+      password = 'Collabera@01',
+      retry = 5,
+      timeout;
 
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
@@ -52,7 +53,7 @@ describe('cli', function() {
         if (!suite.isMocked) {
           setTimeout(function() {
             var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
-            suite.execute(cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               setTimeout(callback, timeout);
             });
@@ -83,17 +84,20 @@ describe('cli', function() {
       it('Create a VM with static ip address', function(done) {
         getImageName('Windows', function(ImageName) {
           getVnet('Created', function(virtualnetName, affinityName, staticIpToCreate, staticIpToSet) {
-            suite.execute('vm create --virtual-network-name %s -n %s --affinity-group %s %s %s %s %s --static-ip %s --json',
-              virtualnetName, vmName, affinityName, vmName, ImageName, username, password, staticIpToSet, function(result) {
+            var cmd = util.format('vm create --virtual-network-name %s -n %s --affinity-group %s %s %s %s %s --static-ip %s --json',
+              virtualnetName, vmName, affinityName, vmName, ImageName, username, password, staticIpToSet).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
+              result.exitStatus.should.equal(0);
+              cmd = util.format('vm export %s %s --json', vmName, file).split(' ');
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
                 result.exitStatus.should.equal(0);
-                suite.execute('vm export %s %s --json', vmName, file, function(result) {
+                cmd = util.format('vm delete %s -q  --json', vmName).split(' ');
+                testUtils.executeCommand(suite, retry, cmd, function(result) {
                   result.exitStatus.should.equal(0);
-                  suite.execute('vm delete %s -q  --json', vmName, function(result) {
-                    result.exitStatus.should.equal(0);
-                    done();
-                  });
+                  done();
                 });
               });
+            });
           });
         });
       });
@@ -107,16 +111,17 @@ describe('cli', function() {
           var jsonstr = JSON.stringify(obj);
           fs.writeFileSync(file, jsonstr);
           getVnet('Created', function(virtualnetName, affinityName, staticIpToCreate, staticIpToSet) {
-            suite.execute('vm create-from %s %s --virtual-network-name %s --affinity-group %s --json', vmName, file, virtualnetName, affinityName, function(result) {
+            var cmd = util.format('vm create-from %s %s --virtual-network-name %s --affinity-group %s --json', vmName, file, virtualnetName, affinityName).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
-              suite.execute('vm static-ip show %s --json', vmName,
-                function(result) {
-                  result.exitStatus.should.equal(0);
-                  var vnets = JSON.parse(result.text);
-                  vnets.Network.StaticIP.should.equal(staticIpToSet);
-                  fs.unlinkSync('vminfo.json');
-                  done();
-                });
+              cmd = util.format('vm static-ip show %s --json', vmName).split(' ');
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
+                result.exitStatus.should.equal(0);
+                var vnets = JSON.parse(result.text);
+                vnets.Network.StaticIP.should.equal(staticIpToSet);
+                fs.unlinkSync('vminfo.json');
+                done();
+              });
             });
           });
         });
@@ -126,7 +131,8 @@ describe('cli', function() {
     //check if disk is released from vm and then if released call callback or else wait till it is released
     function waitForDiskRelease(vmDisk, callback) {
       var vmDiskObj;
-      suite.execute('vm disk show %s --json', vmDisk, function(result) {
+      var cmd = util.format('vm disk show %s --json', vmDisk).split(' ');
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         vmDiskObj = JSON.parse(result.text);
         if (vmDiskObj.usageDetails && vmDiskObj.usageDetails.deploymentName) {
@@ -142,7 +148,7 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      suite.execute(cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {
@@ -162,7 +168,7 @@ describe('cli', function() {
         callback(getVnet.vnetName, getVnet.affinityName, getVnet.firstIp, getVnet.secondIp);
       } else {
         cmd = util.format('network vnet list --json').split(' ');
-        suite.execute(cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vnetName = JSON.parse(result.text);
           var found = vnetName.some(function(vnet) {
@@ -183,7 +189,7 @@ describe('cli', function() {
           if (!found) {
             getAffinityGroup(location, function(affinGrpName) {
               cmd = util.format('network vnet create %s -a %s --json', vnetName, affinGrpName).split(' ');
-              suite.execute(cmd, function(result) {
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
                 result.exitStatus.should.equal(0);
                 getVnet.vnetName = vnetName;
                 getVnet.affinityName = affinGrpName;
@@ -206,10 +212,12 @@ describe('cli', function() {
 
     // Get name of an image of the given category
     function getAffinityGroup(location, callBack) {
+      var cmd;
       if (getAffinityGroup.affinGrpName) {
         callBack(getAffinityGroup.affinGrpName);
       } else {
-        suite.execute('account affinity-group list --json', function(result) {
+        cmd = util.format('account affinity-group list --json').split(' ');
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var affinList = JSON.parse(result.text);
           var found = affinList.some(function(affinGrp) {
@@ -219,12 +227,13 @@ describe('cli', function() {
             }
           });
           if (!found) {
-            suite.execute('account affinity-group create -l %s -e %s -d %s %s --json',
-              location, affinLabel, affinDesc, affinityName, function(result) {
-                result.exitStatus.should.equal(0);
-                getAffinityGroup.affinGrpName = affinityName;
-                callBack(affinityName);
-              });
+            cmd = util.format('account affinity-group create -l %s -e %s -d %s %s --json',
+              location, affinLabel, affinDesc, affinityName).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
+              result.exitStatus.should.equal(0);
+              getAffinityGroup.affinGrpName = affinityName;
+              callBack(affinityName);
+            });
           } else
             callBack(getAffinityGroup.affinGrpName);
         });

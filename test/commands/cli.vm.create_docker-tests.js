@@ -14,11 +14,12 @@
  */
 var should = require('should');
 var util = require('util');
-var testUtils = require('../util/util');
-var CLITest = require('../framework/cli-test');
 var path = require('path');
 var fs = require('fs');
-var homePath = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
+var testUtils = require('../util/util');
+var CLITest = require('../framework/cli-test');
+
+var
 var suite;
 var vmPrefix = 'clitestvm';
 var testPrefix = 'cli.vm.create_docker-tests';
@@ -27,14 +28,15 @@ var requiredEnvironment = [{
   defaultValue: 'West US'
 }];
 
-var currentRandom = 0;
-
 describe('cli', function() {
   describe('vm', function() {
     var vmName,
       dockerCertDir,
       dockerCerts,
-      location, retry;
+      location, retry = 5,
+      homePath, timeout,
+      username = 'azureuser',
+      password = 'Pa$$word@123';
 
     // A common VM used by multiple tests
     var vmToUse = {
@@ -57,7 +59,7 @@ describe('cli', function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
         vmName = process.env.TEST_VM_NAME;
         timeout = suite.isMocked ? 0 : 12000;
-		retry = 5;
+        homePath = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
         done();
       });
     });
@@ -66,7 +68,8 @@ describe('cli', function() {
       function deleteUsedVM(vm, callback) {
         if (vm.Created && vm.Delete) {
           setTimeout(function() {
-            suite.execute('vm delete %s -b --quiet --json', vm.Name, function(result) {
+            var cmd = util.format('vm delete %s -b --quiet --json', vm.Name).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -113,23 +116,27 @@ describe('cli', function() {
         var dockerPort = 4243;
 
         getImageName('Linux', function(ImageName) {
-          suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" --json --location %s --ssh',
-            vmName, ImageName, location, function(result) {
+          var cmd = util.format('vm docker create %s %s %s %s --json --ssh',
+            vmName, ImageName, username, password).split(' ');
+          cmd.push('--location');
+          cmd.push(location);
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.equal(0);
+            cmd = util.format('vm show %s --json', vmName).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
-              suite.execute('vm show %s --json', vmName, function(result) {
-                result.exitStatus.should.equal(0);
-                var certifiatesExist = checkForDockerCertificates(dockerCertDir);
-                certifiatesExist.should.be.true;
-                var createdVM = JSON.parse(result.text);
-                var dockerPortExists = checkForDockerPort(createdVM, dockerPort);
-                dockerPortExists.should.be.true;
-                createdVM.VMName.should.equal(vmName);
-                vmToUse.Name = vmName;
-                vmToUse.Created = true;
-                vmToUse.Delete = true;
-                setTimeout(done, timeout);
-              });
+              var certifiatesExist = checkForDockerCertificates(dockerCertDir);
+              certifiatesExist.should.be.true;
+              var createdVM = JSON.parse(result.text);
+              var dockerPortExists = checkForDockerPort(createdVM, dockerPort);
+              dockerPortExists.should.be.true;
+              createdVM.VMName.should.equal(vmName);
+              vmToUse.Name = vmName;
+              vmToUse.Created = true;
+              vmToUse.Delete = true;
+              setTimeout(done, timeout);
             });
+          });
         });
       });
 
@@ -138,55 +145,68 @@ describe('cli', function() {
         var dockerPort = 4113;
 
         getImageName('Linux', function(ImageName) {
-          suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" --json --location %s --ssh --docker-cert-dir %s --docker-port %s',
-            vmName, ImageName, location, dockerCertDir, dockerPort, function(result) {
+          var cmd = util.format('vm docker create %s %s %s %s --json --ssh --docker-cert-dir %s --docker-port %s',
+            vmName, ImageName, username, password, dockerCertDir, dockerPort).split(' ');
+          cmd.push('--location');
+          cmd.push(location);
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.equal(0);
+            cmd = util.format('vm show %s --json', vmName).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
-              suite.execute('vm show %s --json', vmName, function(result) {
-                result.exitStatus.should.equal(0);
-                var certificatesExist = checkForDockerCertificates(dockerCertDir.toString());
-                certificatesExist.should.be.true;
-                var createdVM = JSON.parse(result.text);
-                var dockerPortExists = checkForDockerPort(createdVM, dockerPort);
-                dockerPortExists.should.be.true;
-                createdVM.VMName.should.equal(vmName);
-                vmToUse.Name = vmName;
-                vmToUse.Created = true;
-                vmToUse.Delete = true;
-                setTimeout(done, timeout);
-              });
+              var certificatesExist = checkForDockerCertificates(dockerCertDir.toString());
+              certificatesExist.should.be.true;
+              var createdVM = JSON.parse(result.text);
+              var dockerPortExists = checkForDockerPort(createdVM, dockerPort);
+              dockerPortExists.should.be.true;
+              createdVM.VMName.should.equal(vmName);
+              vmToUse.Name = vmName;
+              vmToUse.Created = true;
+              vmToUse.Delete = true;
+              setTimeout(done, timeout);
             });
+          });
         });
       });
 
       it('Create Docker VM with duplicate docker port should throw error', function(done) {
         getImageName('Linux', function(ImageName) {
-          suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" --json --location %s --ssh 22 --docker-port 22',
-            vmName, ImageName, location, function(result) {
-              result.exitStatus.should.not.equal(0);
-              setTimeout(done, timeout);
-            });
+          var cmd = util.format('vm docker create %s %s %s %s --json --ssh 22 --docker-port 22',
+            vmName, ImageName, username, password).split(' ');
+          cmd.push('--location');
+          cmd.push(location);
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.not.equal(0);
+            setTimeout(done, timeout);
+          });
         });
       });
 
       it('Create Docker VM with invalid docker port should throw error', function(done) {
         getImageName('Linux', function(ImageName) {
-          suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" --json --location %s --ssh 22 --docker-port 3.2',
-            vmName, ImageName, location, function(result) {
-              result.exitStatus.should.not.equal(0);
-              result.errorText.should.include('A parameter was incorrect');
-              setTimeout(done, timeout);
-            });
+          var cmd = util.format('vm docker create %s %s %s %s --json --ssh 22 --docker-port 3.2',
+            vmName, ImageName, username, password).split(' ');
+          cmd.push('--location');
+          cmd.push(location);
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.not.equal(0);
+            result.errorText.should.include('A parameter was incorrect');
+            setTimeout(done, timeout);
+          });
         });
       });
 
       it('Create Docker VM with invalid docker cert dir should throw error', function(done) {
         getImageName('Linux', function(ImageName) {
-          suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" --json --location %s --ssh 22 --docker-cert-dir D:/foo/bar',
-            vmName, ImageName, location, function(result) {
-              result.exitStatus.should.not.equal(0);
-              result.errorText.should.include('ENOENT');
-              setTimeout(done, timeout);
-            });
+          var cmd = util.format('vm docker create %s %s %s %s --json --ssh 22 --docker-cert-dir D:/foo/bar',
+            vmName, ImageName, username, password).split(' ');
+          cmd.push('--location');
+          cmd.push(location);
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.not.equal(0);
+            result.errorText.should.include('ENOENT');
+            setTimeout(done, timeout);
+          });
         });
       });
 
@@ -195,7 +215,8 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var imageName;
-      suite.execute('vm image list --json', function(result) {
+      var cmd = util.format('vm image list --json').split(' ');
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {

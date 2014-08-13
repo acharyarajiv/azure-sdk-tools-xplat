@@ -39,7 +39,8 @@ describe('cli', function() {
       location,
 	  retry,
       vmsize = 'small',
-      sshPort = '223';
+      sshPort = '223',
+      username = 'azureuser';
 
     var vmToUse = {
       Name: null,
@@ -94,8 +95,8 @@ describe('cli', function() {
       it('with custom data', function(done) {
         getImageName('Linux', function(vmImgName) {
           generateFile(fileName, null, 'nodejs,python,wordpress');
-          var cmd = util.format('vm create -e %s -z %s --ssh-cert %s --no-ssh-password %s %s testuser Collabera@01 -d %s --json --verbose',
-            sshPort, vmsize, certFile, customVmName, vmImgName, fileName).split(' ');
+          var cmd = util.format('vm create -e %s -z %s --ssh-cert %s --no-ssh-password %s %s %s -d %s --json --verbose',
+            sshPort, vmsize, certFile, customVmName, vmImgName, username, fileName).split(' ');
 			cmd.push('-l');
 			cmd.push(location);
           testUtils.executeCommand(suite, retry, cmd, function(result) {

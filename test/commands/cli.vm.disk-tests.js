@@ -48,6 +48,7 @@ describe('cli', function() {
     beforeEach(function(done) {
       suite.setupTest(function() {
         location = process.env.AZURE_VM_TEST_LOCATION;
+        storageAccountKey = process.env.AZURE_STORAGE_ACCESS_KEY
         timeout = suite.isMocked ? 0 : 5000;
         done();
       });
@@ -81,6 +82,29 @@ describe('cli', function() {
           });
         });
       });
+
+      it('show vm disk', function(done) {
+        var diskName, vmname;
+        var cmd = util.format('vm list --json').split(' ');
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
+          result.exitStatus.should.equal(0);
+          var vmlist = JSON.parse(result.text);
+          vmlist.some(function(vm) {
+            if (vm.OSDisk) {
+              diskName = vm.OSDisk.name;
+              vmname = vm.VMName
+              return true;
+            }
+          });
+          cmd = util.format('vm disk list %s --json', vmname).split(' ');
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
+            result.exitStatus.should.equal(0);
+            var diskObj = JSON.parse(result.text);
+            diskObj[0].name.should.equal(diskName);
+            done();
+          });
+        });
+      });
     });
 
     //create and delete
@@ -91,7 +115,7 @@ describe('cli', function() {
           diskSourcePath = diskObj.mediaLinkUri;
           var domainUrl = 'http://' + diskSourcePath.split('/')[2];
           var blobUrl = domainUrl + '/disks/' + diskName;
-          var cmd = util.format('vm disk create %s %s -u %s --json', diskName, diskSourcePath, location, blobUrl).split(' ');
+          var cmd = util.format('vm disk create %s %s -u %s --json', diskName, diskSourcePath, blobUrl).split(' ');
           cmd.push('-l');
           cmd.push(location);
           testUtils.executeCommand(suite, retry, cmd, function(result) {

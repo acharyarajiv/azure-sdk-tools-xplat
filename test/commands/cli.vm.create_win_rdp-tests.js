@@ -30,6 +30,8 @@ describe('cli', function() {
   describe('vm', function() {
     var vmName,
       vmImgName,
+      username = 'azureuser',
+      password = 'PassW0rd$',
       location, retry = 5;
 
     var vmToUse = {
@@ -82,8 +84,8 @@ describe('cli', function() {
     describe('Create:', function() {
       it('Windows Vm', function(done) {
         getImageName('Windows', function(ImageName) {
-          var cmd = util.format('vm create %s %s azureuser PassW0rd$ -r --json',
-            vmName, ImageName).split(' ');
+          var cmd = util.format('vm create %s %s %s %s -r --json',
+            vmName, ImageName, username, password).split(' ');
           cmd.push('-l');
           cmd.push(location);
           testUtils.executeCommand(suite, retry, cmd, function(result) {
@@ -98,8 +100,8 @@ describe('cli', function() {
     describe('Create:', function() {
       it('with Connect', function(done) {
         var vmConnect = vmName + '-2';
-        var cmd = util.format('vm create -l %s --connect %s %s azureuser PassW0rd$ --json',
-          'someLoc', vmName, vmImgName).split(' ');
+        var cmd = util.format('vm create -l %s --connect %s %s %s %s --json',
+          'someLoc', vmName, vmImgName, username, password).split(' ');
         cmd[3] = location;
         testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
@@ -114,8 +116,8 @@ describe('cli', function() {
     // Negative Test Case by specifying VM Name Twice
     describe('Negative test case:', function() {
       it('Specifying Vm Name Twice', function(done) {
-        var cmd = util.format('vm create %s %s "azureuser" "Pa$$word@123" --json',
-          vmName, vmImgName).split(' ');
+        var cmd = util.format('vm create %s %s %s %s--json',
+          vmName, vmImgName, username, password).split(' ');
         cmd.push('-l');
         cmd.push(location);
         testUtils.executeCommand(suite, retry, cmd, function(result) {

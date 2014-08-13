@@ -14,9 +14,11 @@
  */
 var should = require('should');
 var util = require('util');
-var CLITest = require('../framework/cli-test');
 var path = require('path');
 var fs = require('fs');
+
+var testUtils = require('../util/util');
+var CLITest = require('../framework/cli-test');
 var homePath = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
 var suite;
 var testPrefix = 'cli.vm.staticvm_docker-tests';
@@ -25,14 +27,14 @@ var requiredEnvironment = [{
   defaultValue: 'West US'
 }];
 
-var currentRandom = 0;
-
 describe('cli', function() {
   describe('vm', function() {
     var vmName,
       dockerCertDir,
-      dockerCerts,
-      location;
+      dockerCerts, timeout,
+      location, retry = 5,
+      username = 'azureuser',
+      password = 'Pa$$word@123';
 
     var vmToUse = {
       Name: null,
@@ -62,7 +64,8 @@ describe('cli', function() {
       function deleteUsedVM(vm, callback) {
         if (vm.Created && vm.Delete) {
           setTimeout(function() {
-            suite.execute('vm delete %s -b --quiet --json', vm.Name, function(result) {
+            var cmd = util.format('vm delete %s -b --quiet --json', vm.Name).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -110,24 +113,26 @@ describe('cli', function() {
 
         getImageName('Linux', function(ImageName) {
           getVnet('Created', function(virtualnetName, affinityName, staticIpToCreate, staticIpToSet) {
-            suite.execute('vm docker create %s %s "azureuser" "Pa$$word@123" -a %s --static-ip %s --virtual-network-name %s --json',
-              vmName, ImageName, affinityName, staticIpToSet, virtualnetName, function(result) {
+            var cmd = util.format('vm docker create %s %s %s %s -a %s --static-ip %s --virtual-network-name %s --json',
+              vmName, ImageName, username, password, affinityName, staticIpToSet, virtualnetName).split(' ');
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
+              result.exitStatus.should.equal(0);
+              cmd = util.format('vm show %s --json', vmName).split(' ');
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
                 result.exitStatus.should.equal(0);
-                suite.execute('vm show %s --json', vmName, function(result) {
-                  result.exitStatus.should.equal(0);
-                  var certifiatesExist = checkForDockerCertificates(dockerCertDir);
-                  certifiatesExist.should.be.true;
-                  var cratedVM = JSON.parse(result.text);
-                  var dockerPortExists = checkForDockerPort(cratedVM, dockerPort);
-                  dockerPortExists.should.be.true;
+                var certifiatesExist = checkForDockerCertificates(dockerCertDir);
+                certifiatesExist.should.be.true;
+                var cratedVM = JSON.parse(result.text);
+                var dockerPortExists = checkForDockerPort(cratedVM, dockerPort);
+                dockerPortExists.should.be.true;
 
-                  cratedVM.VMName.should.equal(vmName);
-                  vmToUse.Name = vmName;
-                  vmToUse.Created = true;
-                  vmToUse.Delete = true;
-                  setTimeout(done, timeout);
-                });
+                cratedVM.VMName.should.equal(vmName);
+                vmToUse.Name = vmName;
+                vmToUse.Created = true;
+                vmToUse.Delete = true;
+                setTimeout(done, timeout);
               });
+            });
           });
         });
       });
@@ -137,7 +142,7 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      suite.execute(cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {
@@ -156,7 +161,7 @@ describe('cli', function() {
         callback(getVnet.vnetName, getVnet.affinityName, getVnet.staticIpToCreate, getVnet.staticIpToSet);
       } else {
         cmd = util.format('network vnet list --json').split(' ');
-        suite.execute(cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vnetName = JSON.parse(result.text);
           var found = vnetName.some(function(vnet) {
@@ -177,7 +182,7 @@ describe('cli', function() {
           if (!found) {
             getAffinityGroup(location, function(affinGrpName) {
               cmd = util.format('network vnet create %s -a %s --json', vnetName, affinGrpName).split(' ');
-              suite.execute(cmd, function(result) {
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
                 result.exitStatus.should.equal(0);
                 getVnet.vnetName = vnetName;
                 getVnet.affinityName = affinGrpName;
