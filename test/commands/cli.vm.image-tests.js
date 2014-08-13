@@ -30,7 +30,7 @@ describe('cli', function() {
   describe('vm', function() {
     var vmImgName,
       location,
-      timeout;
+      timeout, retry = 5;
 
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
@@ -65,7 +65,7 @@ describe('cli', function() {
           var cmd = util.format('vm image create -u %s %s %s --os %s --json', blobUrl, vmImgName, imageSourcePath, 'Linux').split(' ');
           cmd.push('-l');
           cmd.push(location);
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(done, timeout);
           });
@@ -75,7 +75,7 @@ describe('cli', function() {
       //show the created image
       it('Show', function(done) {
         var cmd = util.format('vm image show %s --json', vmImgName).split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vmImageObj = JSON.parse(result.text);
           vmImageObj.name.should.equal(vmImgName);
@@ -87,7 +87,7 @@ describe('cli', function() {
       //list all images
       it('List', function(done) {
         var cmd = util.format('vm image list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var imageList = JSON.parse(result.text);
           imageList.length.should.be.above(0);
@@ -131,7 +131,7 @@ describe('cli', function() {
 
       it('Delete', function(done) {
         var cmd = util.format('vm image delete -b %s --json', vmImgName).split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           setTimeout(done, timeout);
         });
@@ -141,7 +141,7 @@ describe('cli', function() {
     // Get name of an disk of the given category
     function getDiskName(OS, callBack) {
       var cmd = util.format('vm disk list --json').split(' ');
-      testUtils.executeCommand(suite, 5, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var diskList = JSON.parse(result.text);
         diskList.some(function(disk) {

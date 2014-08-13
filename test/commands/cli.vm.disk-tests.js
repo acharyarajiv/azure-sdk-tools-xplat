@@ -34,7 +34,7 @@ var requiredEnvironment = [{
 describe('cli', function() {
   describe('vm', function() {
     var diskSourcePath,
-      storageAccountKey, timeout;
+      storageAccountKey, timeout, retry = 5;
 
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
@@ -61,7 +61,7 @@ describe('cli', function() {
     describe('Disk:', function() {
       it('List and Show', function(done) {
         var cmd = util.format('vm disk list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var diskList = JSON.parse(result.text);
           diskList.length.should.be.above(0);
@@ -73,7 +73,7 @@ describe('cli', function() {
           });
 
           cmd = util.format('vm disk show %s --json', diskName).split(' ');
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             var disk = JSON.parse(result.text);
             disk.name.should.equal(diskName);
@@ -94,16 +94,16 @@ describe('cli', function() {
           var cmd = util.format('vm disk create %s %s -u %s --json', diskName, diskSourcePath, location, blobUrl).split(' ');
           cmd.push('-l');
           cmd.push(location);
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             cmd = util.format('vm disk show %s --json', diskName).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               var diskObj = JSON.parse(result.text);
               diskObj.name.should.equal(diskName);
               setTimeout(function() {
                 cmd = util.format('vm disk delete -b %s --json', diskName).split(' ');
-                testUtils.executeCommand(suite, 5, cmd, function(result) {
+                testUtils.executeCommand(suite, retry, cmd, function(result) {
                   result.exitStatus.should.equal(0);
                   setTimeout(done, timeout);
                 });
@@ -117,7 +117,7 @@ describe('cli', function() {
         var sourcePath = suite.isMocked ? diskSourcePath : (process.env.BLOB_SOURCE_PATH || diskSourcePath);
         var blobUrl = sourcePath.substring(0, sourcePath.lastIndexOf('/')) + '/' + suite.generateId(vmPrefix, null) + '.vhd';
         var cmd = util.format('vm disk upload %s %s %s --json', sourcePath, blobUrl, storageAccountKey).split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           done();
         });
@@ -128,7 +128,7 @@ describe('cli', function() {
     function getDiskName(OS, callBack) {
       var diskObj;
       var cmd = util.format('vm disk list --json').split(' ');
-      testUtils.executeCommand(suite, 5, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var diskList = JSON.parse(result.text);
         diskList.some(function(disk) {

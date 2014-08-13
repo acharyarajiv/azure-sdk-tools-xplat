@@ -68,15 +68,15 @@ describe('cli', function() {
       it('shutdown and capture', function(done) {
         createVM(function() {
           var cmd = util.format('vm shutdown %s --json', vmName).split(' ');
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(function() {
               cmd = util.format('vm capture %s %s --json --delete', vmName, captureImg).split(' ');
-              testUtils.executeCommand(suite, 5, cmd, function(result) {
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
                 result.exitStatus.should.equal(0);
                 setTimeout(function() {
                   cmd = util.format('service delete %s -q --json', vmName, captureImg).split(' ');
-                  testUtils.executeCommand(suite, 5, cmd, function(result) {
+                  testUtils.executeCommand(suite, retry, cmd, function(result) {
                     result.exitStatus.should.equal(0);
                     done();
                   });
@@ -92,7 +92,7 @@ describe('cli', function() {
     describe('Captured Images:', function() {
       it('should be listed in images list and delete', function(done) {
         var cmd = util.format('vm image list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vmImagelist = JSON.parse(result.text);
           var imagefound = false;
@@ -104,7 +104,7 @@ describe('cli', function() {
           imagefound.should.true;
           setTimeout(function() {
             cmd = util.format('vm image delete -b %s --json', captureImg).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               setTimeout(done, timeout);
             });
@@ -118,7 +118,7 @@ describe('cli', function() {
         var cmd = util.format('vm create --ssh-cert %s %s %s %s %s --json', certFile, vmName, imagename, username, password).split(' ');
         cmd.push('-l');
         cmd.push(location);
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           setTimeout(callback, timeout);
         });
@@ -128,7 +128,7 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      testUtils.executeCommand(suite, 5, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {

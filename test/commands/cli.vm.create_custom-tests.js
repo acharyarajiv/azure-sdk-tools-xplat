@@ -98,7 +98,7 @@ describe('cli', function() {
             sshPort, vmsize, certFile, customVmName, vmImgName, fileName).split(' ');
 			cmd.push('-l');
 			cmd.push(location);
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             var verboseString = result.text;
             var iPosCustom = verboseString.indexOf('customdata');
@@ -116,7 +116,7 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      testUtils.executeCommand(suite, 5, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {

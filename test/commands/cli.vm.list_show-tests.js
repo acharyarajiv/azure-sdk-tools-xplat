@@ -22,7 +22,7 @@ var testPrefix = 'cli.vm.list_show-tests';
 
 describe('cli', function() {
   describe('vm', function() {
-    var vmName;
+    var vmName, retry = 5;
 
     before(function(done) {
       suite = new CLITest(testPrefix, []);
@@ -46,7 +46,7 @@ describe('cli', function() {
       //location list
       it('Location List', function(done) {
         var cmd = util.format('vm location list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           result.text.should.not.empty;
           done();
@@ -55,13 +55,13 @@ describe('cli', function() {
 
       it('List and Show', function(done) {
         var cmd = util.format('vm list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vmList = JSON.parse(result.text);
           vmList.length.should.be.above(0);
           vmName = vmList[0].VMName;
           cmd = util.format('vm show %s --json').split(' ');
-          testUtils.executeCommand(suite, 5, cmd, vmName, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, vmName, function(result) {
             result.exitStatus.should.equal(0);
             var vmObj = JSON.parse(result.text);
             vmObj.VMName.should.equal(vmName);

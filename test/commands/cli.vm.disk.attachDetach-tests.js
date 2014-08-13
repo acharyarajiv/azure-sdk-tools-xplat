@@ -33,7 +33,7 @@ describe('cli', function() {
       username = 'azureuser',
       password = 'PassW0rd$',
       diskName,
-      timeout;
+      timeout, retry = 5;
 
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
@@ -68,12 +68,12 @@ describe('cli', function() {
         createDisk(function() {
           createVM(function() {
             var cmd = util.format('vm disk attach %s %s --json', vmName, diskName).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               waitForDiskOp(vmName, true, function(vmObj) {
                 vmObj.DataDisks[0].name.should.equal(diskName);
                 cmd = util.format('vm disk detach %s 0 --json', vmName).split(' ');
-                testUtils.executeCommand(suite, 5, cmd, function(result) {
+                testUtils.executeCommand(suite, retry, cmd, function(result) {
                   result.exitStatus.should.equal(0);
                   waitForDiskOp(vmName, false, function(vmObj) {
                     done();
@@ -90,7 +90,7 @@ describe('cli', function() {
     function waitForDiskOp(vmName, DiskAttach, callback) {
       var vmObj;
       var cmd = util.format('vm show %s --json', vmName).split(' ');
-      testUtils.executeCommand(suite, 5, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         vmObj = JSON.parse(result.text);
         if ((!DiskAttach && !vmObj.DataDisks[0]) || (DiskAttach && vmObj.DataDisks[0])) {
@@ -108,7 +108,7 @@ describe('cli', function() {
         var cmd = util.format('vm create %s %s %s %s --json', vmName, imagename, username, password).split(' ');
         cmd.push('-l');
         cmd.push(location);
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           setTimeout(callback, timeout);
         });
@@ -123,7 +123,7 @@ describe('cli', function() {
         var cmd = util.format('vm disk create %s %s -u %s --json', diskName, diskSourcePath, blobUrl).split(' ');
 		cmd.push('-l');
         cmd.push(location);
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           callback();
         });
@@ -133,7 +133,7 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      testUtils.executeCommand(suite, 5, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {
@@ -149,7 +149,7 @@ describe('cli', function() {
     // Get name of an disk of the given category
     function getDiskName(OS, callBack) {
       var cmd = util.format('vm disk list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var diskList = JSON.parse(result.text);
           diskList.some(function(disk) {
@@ -169,7 +169,7 @@ describe('cli', function() {
       else {
         var cmd = util.format('vm disk delete %s -b --json', diskName).split(' ');
         setTimeout(function() {
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             return callback();
           });
@@ -183,7 +183,7 @@ describe('cli', function() {
       else {
         var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
         setTimeout(function() {
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             return callback();
           });

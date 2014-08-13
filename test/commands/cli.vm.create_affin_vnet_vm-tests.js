@@ -68,7 +68,7 @@ describe('cli', function() {
         if (vm.Created && vm.Delete) {
           setTimeout(function() {
             var cmd = util.format('vm delete %s -b -q --json', vm.Name).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -92,7 +92,7 @@ describe('cli', function() {
           getVnet('Created', function(virtualnetName, affinityName) {
             var cmd = util.format('vm create -A %s -n %s -a %s -w %s %s %s %s %s --json',
               availSetName, vmVnetName, affinityName, virtualnetName, vmVnetName, imageName, userName, password).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vmToUse.Created = true;
               vmToUse.Name = vmVnetName;
@@ -109,10 +109,10 @@ describe('cli', function() {
         getImageName('Linux', function(imageName) {
           var cmd = util.format('vm create -a %s -w %s %s %s %s %s --json',
             'some_name', 'some_name', vmVnetName, imageName, userName, password).split(' ');
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(1);
             cmd = util.format('service show %s --json', vmVnetName).split(' ')
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(1);
               done();
             });
@@ -127,7 +127,7 @@ describe('cli', function() {
         callBack(getImageName.imageName);
       } else {
         var cmd = util.format('vm image list --json').split(' ')
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var imageList = JSON.parse(result.text);
           imageList.some(function(image) {
@@ -148,7 +148,7 @@ describe('cli', function() {
         callback(getVnet.vnetName, getVnet.affinityName);
       } else {
         cmd = util.format('network vnet list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vnetName = JSON.parse(result.text);
           var found = vnetName.some(function(vnet) {
@@ -162,7 +162,7 @@ describe('cli', function() {
           if (!found) {
             getAffinityGroup(location, function(affinGrpName) {
               cmd = util.format('network vnet create %s -a %s --json', vnetName, affinGrpName).split(' ');
-              testUtils.executeCommand(suite, 5, cmd, function(result) {
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
                 result.exitStatus.should.equal(0);
                 getVnet.vnetName = vnetName;
                 getVnet.affinityName = affinGrpName;
@@ -183,7 +183,7 @@ describe('cli', function() {
         callBack(getAffinityGroup.affinGrpName);
       } else {
         cmd = util.format('account affinity-group list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var affinList = JSON.parse(result.text);
           var found = affinList.some(function(affinGrp) {
@@ -195,7 +195,7 @@ describe('cli', function() {
           if (!found) {
             cmd = util.format('account affinity-group create -l %s -e %s -d %s %s --json',
               location, affinLabel, affinDesc, affinityName).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               getAffinityGroup.affinGrpName = affinityName;
               callBack(affinityName);

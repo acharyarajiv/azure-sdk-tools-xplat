@@ -34,7 +34,7 @@ describe('cli', function() {
       timeout,
       username = 'azureuser',
       password = 'PassW0rd$',
-      file = 'vminfo.json';
+      file = 'vminfo.json', retry = 5;
 
     var vmToUse = {
       Name: null,
@@ -68,7 +68,7 @@ describe('cli', function() {
             util.format('vm delete %s -b -q --json', vm.Name).split(' ') :
             util.format('vm delete %s -q --json', vm.Name).split(' ');
           setTimeout(function() {
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -91,7 +91,7 @@ describe('cli', function() {
       it('export and delete', function(done) {
         createVM(function() {
           var cmd = util.format('vm export %s %s  --json', vmName, file).split(' ');
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             fs.existsSync(file).should.equal(true);
             vmToUse.Delete = true;
@@ -111,7 +111,7 @@ describe('cli', function() {
           var cmd = util.format('vm create-from %s %s --json', vmName, file).split(' ');
           cmd.push('-l');
           cmd.push(location);
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             vmToUse.Name = vmName;
             vmToUse.Created = true;
@@ -128,7 +128,7 @@ describe('cli', function() {
     function waitForDiskRelease(vmDisk, callback) {
       var vmDiskObj;
       var cmd = util.format('vm disk show %s --json', vmDisk).split(' ');
-      testUtils.executeCommand(suite, 5, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         vmDiskObj = JSON.parse(result.text);
         if (vmDiskObj.usageDetails && vmDiskObj.usageDetails.deploymentName) {
@@ -146,7 +146,7 @@ describe('cli', function() {
         var cmd = util.format('vm create %s %s %s %s --json', vmName, imagename, username, password).split(' ');
         cmd.push('-l');
         cmd.push(location);
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           vmToUse.Name = vmName;
           vmToUse.Created = true;
@@ -158,7 +158,7 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      testUtils.executeCommand(suite, 5, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {

@@ -79,7 +79,7 @@ describe('cli', function() {
         if (vm.Created && vm.Delete) {
           setTimeout(function() {
             var cmd = util.format('vm delete %s -b -q --json', vm.Name).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -101,7 +101,7 @@ describe('cli', function() {
       it('with community data', function(done) {
         var cmd = util.format('vm create -o %s %s testuser Collabera@01 -l %s  --json --verbose',
           customVmName, communityImageId, location).split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           vmToUse.Name = customVmName;
           vmToUse.Created = true;

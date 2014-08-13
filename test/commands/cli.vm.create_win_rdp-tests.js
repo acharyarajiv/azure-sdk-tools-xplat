@@ -30,7 +30,7 @@ describe('cli', function() {
   describe('vm', function() {
     var vmName,
       vmImgName,
-      location;
+      location, retry = 5;
 
     var vmToUse = {
       Name: null,
@@ -61,7 +61,7 @@ describe('cli', function() {
         if (vm.Created && vm.Delete && !suite.isMocked) {
           setTimeout(function() {
             var cmd = util.format('vm delete %s -b -q --json', vm.Name).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -86,7 +86,7 @@ describe('cli', function() {
             vmName, ImageName).split(' ');
           cmd.push('-l');
           cmd.push(location);
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(done, timeout);
           });
@@ -101,7 +101,7 @@ describe('cli', function() {
         var cmd = util.format('vm create -l %s --connect %s %s azureuser PassW0rd$ --json',
           'someLoc', vmName, vmImgName).split(' ');
         cmd[3] = location;
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           vmToUse.Name = vmConnect;
           vmToUse.Created = true;
@@ -118,7 +118,7 @@ describe('cli', function() {
           vmName, vmImgName).split(' ');
         cmd.push('-l');
         cmd.push(location);
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(1);
           result.errorText.should.include('A VM with dns prefix "' + vmName + '" already exists');
           vmToUse.Name = vmName;
@@ -132,7 +132,7 @@ describe('cli', function() {
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      testUtils.executeCommand(suite, 5, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {

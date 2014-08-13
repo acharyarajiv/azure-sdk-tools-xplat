@@ -34,7 +34,8 @@ describe('cli', function() {
       timeout,
       username = 'azureuser',
       password = 'PassW0rd$',
-      vmEndpointName = 'TestEndpoint';
+      vmEndpointName = 'TestEndpoint',
+	  retry = 5;
 
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
@@ -72,10 +73,10 @@ describe('cli', function() {
           var probPathName = '/prob/listner1';
           var cmd = util.format('vm endpoint create -n %s -o %s %s %s %s -u -b %s -t %s -r tcp -p %s --json',
             vmEndpointName, 'tcp', vmName, 8080, 80, lbSetName, 4444, probPathName).split(' ');
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             cmd = util.format('vm endpoint list %s --json', vmName).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               var epList = JSON.parse(result.text);
               var epExists = epList.some(function(ep) {
@@ -132,11 +133,11 @@ describe('cli', function() {
           endPoints.PPLPLBSetAndProb.PublicPort, endPoints.PPLPLBSetAndProb.LocalPort, endPoints.PPLPLBSetAndProb.Protocol, endPoints.PPLPLBSetAndProb.EnableDirectServerReturn, endPoints.PPLPLBSetAndProb.LoadBalancerSetName,
           endPoints.PPLPLBSetAndProb.ProbProtocol, endPoints.PPLPLBSetAndProb.ProbPort, endPoints.PPLPLBSetAndProb.ProbPath).split(' ');
 
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
 
           cmd = util.format('vm endpoint list %s --json', vmName).split(' ');
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             var allEndPointList = JSON.parse(result.text);
 
@@ -161,7 +162,7 @@ describe('cli', function() {
 
             // Verify endpoint creation with lbSetName and prob option
             cmd = util.format('vm show %s --json', vmName).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               var vmInfo = JSON.parse(result.text);
 
@@ -196,17 +197,17 @@ describe('cli', function() {
         var newEPName = 'updatedEP';
         vmEndpointName = 'TestEndpoint';
         var cmd = util.format('vm endpoint list %s --json', vmName).split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var epList = JSON.parse(result.text);
           var ep = _.first(epList);
           vmEndpointName = ep.name;
           cmd = util.format('vm endpoint update %s -t %s -l %s -n %s -o tcp %s --json',
             vmName, 8081, 8082, newEPName, vmEndpointName).split(' ');
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             cmd = util.format('vm endpoint show %s -e %s --json', vmName, newEPName).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               ep = JSON.parse(result.text);
               ep.Network.Endpoints[0].Name.should.equal(newEPName);
@@ -218,12 +219,12 @@ describe('cli', function() {
 
       it('Delete', function(done) {
         var cmd = util.format('vm endpoint list %s --json', vmName).split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var ep = _.first(JSON.parse(result.text));
           vmEndpointName = ep.name;
           cmd = util.format('vm endpoint delete %s %s --json', vmName, vmEndpointName).split(' ');
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(done, timeout);
           });
@@ -236,7 +237,7 @@ describe('cli', function() {
           var cmd = util.format('vm create %s %s %s %s --json', vmName, imagename, username, password).split(' ');
           cmd.push('-l');
           cmd.push(location);
-          testUtils.executeCommand(suite, 5, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(callback, timeout);
           });
@@ -246,7 +247,7 @@ describe('cli', function() {
 
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      testUtils.executeCommand(suite, 5, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {
@@ -262,7 +263,7 @@ describe('cli', function() {
     function deleteUsedVM(callback) {
       var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
       setTimeout(function() {
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           return callback();
         });

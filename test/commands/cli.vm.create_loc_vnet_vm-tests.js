@@ -67,7 +67,7 @@ describe('cli', function() {
         if (vm.Created && vm.Delete) {
           setTimeout(function() {
             var cmd = util.format('vm delete %s -b -q --json', vm.Name).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -90,13 +90,13 @@ describe('cli', function() {
         getImageName('Linux', function(imageName) {
           getVnet('Created', function(virtualnetName, affinityName) {
             var cmd = util.format('account affinity-group show %s --json', affinityName).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               var vnetObj = JSON.parse(result.text);
               cmd = util.format('vm create -w %s %s %s %s %s --json', virtualnetName, vmVnetName, imageName, userName, password).split(' ');
               cmd.push('-l');
               cmd.push(vnetObj.location);
-              testUtils.executeCommand(suite, 5, cmd, function(result) {
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
                 result.exitStatus.should.equal(0);
                 vmToUse.Created = true;
                 vmToUse.Name = vmVnetName;
@@ -113,7 +113,7 @@ describe('cli', function() {
           getVnet('Created', function(virtualnetName, affinityName) {
             var cmd = util.format('vm create --ssh -w %s %s %s %s %s --json',
               virtualnetName, vmVnetName, imageName, userName, password).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vmToUse.Created = true;
               vmToUse.Name = vmVnetName;
@@ -131,7 +131,7 @@ describe('cli', function() {
         callBack(getImageName.imageName);
       } else {
         var cmd = util.format('vm image list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var imageList = JSON.parse(result.text);
           imageList.some(function(image) {
@@ -152,7 +152,7 @@ describe('cli', function() {
         callback(getVnet.vnetName, getVnet.affinityName);
       } else {
         cmd = util.format('network vnet list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var vnetName = JSON.parse(result.text);
           var found = vnetName.some(function(vnet) {
@@ -166,7 +166,7 @@ describe('cli', function() {
           if (!found) {
             getAffinityGroup(location, function(affinGrpName) {
               cmd = util.format('network vnet create %s -a %s --json', vnetName, affinGrpName).split(' ');
-              testUtils.executeCommand(suite, 5, cmd, function(result) {
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
                 result.exitStatus.should.equal(0);
                 getVnet.vnetName = vnetName;
                 getVnet.affinityName = affinGrpName;
@@ -187,7 +187,7 @@ describe('cli', function() {
         callBack(getAffinityGroup.affinGrpName);
       } else {
         cmd = util.format('account affinity-group list --json').split(' ');
-        testUtils.executeCommand(suite, 5, cmd, function(result) {
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           var affinList = JSON.parse(result.text);
           var found = affinList.some(function(affinGrp) {
@@ -199,7 +199,7 @@ describe('cli', function() {
           if (!found) {
             cmd = util.format('account affinity-group create -l %s -e %s -d %s %s --json',
               location, affinLabel, affinDesc, affinityName).split(' ');
-            testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, retry, cmd, function(result) {
               result.exitStatus.should.equal(0);
               getAffinityGroup.affinGrpName = affinityName;
               callBack(affinityName);
