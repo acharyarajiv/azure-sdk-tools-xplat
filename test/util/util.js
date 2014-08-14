@@ -25,7 +25,7 @@ var exports = module.exports;
  * @param {bool}   isMocked        Boolean flag indicating if the test is mocked or not.
  * @return {string} A new unique identifier.
  */
-exports.generateId = function (prefix, currentList, isMocked) {
+exports.generateId = function(prefix, currentList, isMocked) {
   if (!currentList) {
     currentList = [];
   }
@@ -50,19 +50,19 @@ exports.generateId = function (prefix, currentList, isMocked) {
   }
 };
 
-exports.randomFromTo = function (from, to) {
+exports.randomFromTo = function(from, to) {
   return Math.floor(Math.random() * (to - from + 1) + from);
 };
 
-exports.libFolder = function () {
+exports.libFolder = function() {
   return process.env['AZURE_LIB_PATH'] ? process.env['AZURE_LIB_PATH'] : 'lib';
 };
 
-exports.libRequire = function (path) {
+exports.libRequire = function(path) {
   return require('../../' + exports.libFolder() + '/' + path);
 };
 
-exports.getCertificateKey = function () {
+exports.getCertificateKey = function() {
   if (process.env['AZURE_CERTIFICATE_KEY']) {
     return process.env['AZURE_CERTIFICATE_KEY'];
   } else if (process.env['AZURE_CERTIFICATE_KEY_FILE']) {
@@ -72,7 +72,7 @@ exports.getCertificateKey = function () {
   return null;
 };
 
-exports.getCertificate = function () {
+exports.getCertificate = function() {
   if (process.env['AZURE_CERTIFICATE']) {
     return process.env['AZURE_CERTIFICATE'];
   } else if (process.env['AZURE_CERTIFICATE_FILE']) {
@@ -83,7 +83,7 @@ exports.getCertificate = function () {
 };
 
 //generate a random string
-exports.generateRandomString = function (length) {
+exports.generateRandomString = function(length) {
   var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghiklmnopqrstuvwxyz0123456789';
   var randString = '',
     randNum = '';
@@ -103,15 +103,20 @@ exports.generateRandomString = function (length) {
  * @param {callback} callback  callback
  * @return {Object} A JSON object with templateName, templateUrl, publisher and version as its properties.
  */
-exports.getTemplateInfo = function (suite, keyword, callback) {
+exports.getTemplateInfo = function(suite, keyword, callback) {
   var templates = [];
   var error;
-  var templateInfo = {'templateName' : '', 'templateUrl' : '', 'publisher' : '', 'version' : ''};
-  suite.execute('group template list --json', function (result) {
+  var templateInfo = {
+    'templateName': '',
+    'templateUrl': '',
+    'publisher': '',
+    'version': ''
+  };
+  suite.execute('group template list --json', function(result) {
     if (result.exitStatus === 0) {
       templates = JSON.parse(result.text);
       var templateNotFound = true;
-      templates.forEach(function (item) {
+      templates.forEach(function(item) {
         var regex = new RegExp(keyword, 'i');
         if (item.identity.match(regex)) {
           templateNotFound = false;
@@ -119,29 +124,27 @@ exports.getTemplateInfo = function (suite, keyword, callback) {
           templateInfo.publisher = item.publisher;
           templateInfo.version = item.version;
           var urlKeys = Object.keys(item.definitionTemplates.deploymentTemplateFileUrls);
-          if(urlKeys.length > 0) {
+          if (urlKeys.length > 0) {
             var urlKeyNotFound = true;
-              urlKeys.forEach(function (urlKey) {
+            urlKeys.forEach(function(urlKey) {
               if (urlKey.match(/Default/)) {
-                urlKeyNotFound = false; 
+                urlKeyNotFound = false;
                 templateInfo.templateUrl = item.definitionTemplates.deploymentTemplateFileUrls[urlKey];
               }
             });
-              if(urlKeyNotFound) {
-                callback(new Error('Cannot find the default template url'));
-              }
-          }
-          else {
+            if (urlKeyNotFound) {
+              callback(new Error('Cannot find the default template url'));
+            }
+          } else {
             callback(new Error('The template ' + item.identity + ' does not have any deployment template urls.'));
           }
         }
       });
-      if(templateNotFound) {
+      if (templateNotFound) {
         callback(new Error('Cannot find a template name with the given keyword ' + keyword));
       }
       callback(error, templateInfo);
-    }
-    else {
+    } else {
       callback(new Error(result.errorText));
     }
   });
@@ -149,21 +152,18 @@ exports.getTemplateInfo = function (suite, keyword, callback) {
 
 exports.executeCommand = function(suite, retry, cmd, callback) {
   var self = this;
-  suite.execute(cmd, function (result) {
-    if (result.exitStatus === 1) {
-      if ((result.errorText.indexOf('ECONNRESET') || 
-	    result.errorText.indexOf('ConflictError') ||
-		result.errorText.indexOf('Please try this operation again late')) > -1 && retry--) {
-        setTimeout(function(){
-			self.executeCommand(suite, retry, cmd, callback);
-		},5000);
-      } else {
-        //callback with error
-        //here result can be checked for existstatus but dev will never know what command threw error
-        //while looking at error message
-        callback(result);
-      }
-    } else
+  suite.execute(cmd, function(result) {
+    if (result.exitStatus === 1 && (result.errorText.indexOf('ECONNRESET') ||
+      result.errorText.indexOf('ConflictError') ||
+      result.errorText.indexOf('Please try this operation again late')) > -1 && retry--) {
+      setTimeout(function() {
+        self.executeCommand(suite, retry, cmd, callback);
+      }, 5000);
+    } else {
+      //callback with error
+      //here result can be checked for existstatus but dev will never know what command threw error
+      //while looking at error message
       callback(result);
+    }
   });
 };

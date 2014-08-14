@@ -116,7 +116,7 @@ describe('cli', function() {
     // Negative Test Case by specifying VM Name Twice
     describe('Negative test case:', function() {
       it('Specifying Vm Name Twice', function(done) {
-        var cmd = util.format('vm create %s %s %s %s--json',
+        var cmd = util.format('vm create %s %s %s %s --json',
           vmName, vmImgName, username, password).split(' ');
         cmd.push('-l');
         cmd.push(location);
