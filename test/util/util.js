@@ -153,12 +153,14 @@ exports.getTemplateInfo = function(suite, keyword, callback) {
 exports.executeCommand = function(suite, retry, cmd, callback) {
   var self = this;
   suite.execute(cmd, function(result) {
-    if (result.exitStatus === 1 && (result.errorText.indexOf('ECONNRESET') ||
-      result.errorText.indexOf('ConflictError') ||
-      result.errorText.indexOf('Please try this operation again late')) > -1 && retry--) {
+    if (result.exitStatus === 1 && ((result.errorText.indexOf('ECONNRESET') + 1) ||
+      (result.errorText.indexOf('ConflictError') + 1) ||
+      (result.errorText.indexOf('Please try this operation again later') + 1) ||
+      (result.errorText.indexOf('requires exclusive access.') + 1) ||
+      (result.errorText.indexOf('Please try again later') + 1)) && retry--) {
       setTimeout(function() {
         self.executeCommand(suite, retry, cmd, callback);
-      }, 5000);
+      }, 10000);
     } else {
       //callback with error
       //here result can be checked for existstatus but dev will never know what command threw error

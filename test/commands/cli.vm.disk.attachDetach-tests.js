@@ -42,9 +42,7 @@ describe('cli', function() {
 
     after(function(done) {
       deleteUsedVM(function() {
-        deleteDisk(function() {
-          suite.teardownSuite(done);
-        });
+        suite.teardownSuite(done);
       });
     });
 
@@ -121,7 +119,7 @@ describe('cli', function() {
         var domainUrl = 'http://' + diskSourcePath.split('/')[2];
         var blobUrl = domainUrl + '/disks/' + diskName;
         var cmd = util.format('vm disk create %s %s -u %s --json', diskName, diskSourcePath, blobUrl).split(' ');
-		cmd.push('-l');
+        cmd.push('-l');
         cmd.push(location);
         testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
@@ -149,18 +147,18 @@ describe('cli', function() {
     // Get name of an disk of the given category
     function getDiskName(OS, callBack) {
       var cmd = util.format('vm disk list --json').split(' ');
-        testUtils.executeCommand(suite, retry, cmd, function(result) {
-          result.exitStatus.should.equal(0);
-          var diskList = JSON.parse(result.text);
-          diskList.some(function(disk) {
-            if ((disk.operatingSystemType && disk.operatingSystemType.toLowerCase() === OS.toLowerCase()) &&
-              (disk.location && disk.location.toLowerCase() === location.toLowerCase())) {
-              diskObj = disk;
-              return true;
-            }
-          });
-          callBack(diskObj);
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
+        result.exitStatus.should.equal(0);
+        var diskList = JSON.parse(result.text);
+        diskList.some(function(disk) {
+          if ((disk.operatingSystemType && disk.operatingSystemType.toLowerCase() === OS.toLowerCase()) &&
+            (disk.location && disk.location.toLowerCase() === location.toLowerCase())) {
+            diskObj = disk;
+            return true;
+          }
         });
+        callBack(diskObj);
+      });
     }
 
     function deleteDisk(callback) {
