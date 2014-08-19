@@ -103,7 +103,7 @@ describe('cli', function() {
           imageObj.category.toLowerCase().should.equal('public');
 
           found = null,
-            imageObj = null;
+          imageObj = null;
           found = imageList.some(function(image) {
             if (image.category.toLowerCase() === 'user') {
               imageObj = image;
@@ -114,7 +114,7 @@ describe('cli', function() {
           imageObj.category.toLowerCase().should.equal('user');
 
           found = null,
-            imageObj = null;
+          imageObj = null;
           found = imageList.some(function(image) {
             if (image.category.toLowerCase() === 'user' && image.deploymentName) {
               imageObj = image;

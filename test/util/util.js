@@ -158,6 +158,7 @@ exports.executeCommand = function(suite, retry, cmd, callback) {
       (result.errorText.indexOf('Please try this operation again later') + 1) ||
       (result.errorText.indexOf('requires exclusive access.') + 1) ||
       (result.errorText.indexOf('Please try again later') + 1)) && retry--) {
+      console.log('Re-executing command. Please wait.');
       setTimeout(function() {
         self.executeCommand(suite, retry, cmd, callback);
       }, 10000);

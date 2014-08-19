@@ -37,7 +37,7 @@ describe('cli', function() {
       certFile,
       timeout,
       location,
-	  retry,
+      retry,
       vmsize = 'small',
       sshPort = '223',
       username = 'azureuser';
@@ -63,7 +63,7 @@ describe('cli', function() {
         customVmName = suite.isMocked ? 'xplattestvmcustdata' : suite.generateId(vmPrefix, null) + 'cdata';
         certFile = process.env.SSHCERT;
         timeout = suite.isMocked ? 0 : 5000;
-		retry = 5;
+        retry = 5;
         done();
       });
     });
@@ -73,7 +73,7 @@ describe('cli', function() {
         if (vm.Created && vm.Delete) {
           setTimeout(function() {
             var cmd = util.format('vm delete %s -b -q --json', vm.Name).split(' ');
-             testUtils.executeCommand(suite, 5, cmd, function(result) {
+            testUtils.executeCommand(suite, 5, cmd, function(result) {
               result.exitStatus.should.equal(0);
               vm.Name = null;
               vm.Created = vm.Delete = false;
@@ -97,8 +97,8 @@ describe('cli', function() {
           generateFile(fileName, null, 'nodejs,python,wordpress');
           var cmd = util.format('vm create -e %s -z %s --ssh-cert %s --no-ssh-password %s %s %s -d %s --json --verbose',
             sshPort, vmsize, certFile, customVmName, vmImgName, username, fileName).split(' ');
-			cmd.push('-l');
-			cmd.push(location);
+          cmd.push('-l');
+          cmd.push(location);
           testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             var verboseString = result.text;

@@ -33,7 +33,7 @@ describe('cli', function() {
       location,
       username = 'azureuser',
       password = 'Collabera@01',
-	  retry = 5;
+      retry = 5;
 
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
@@ -62,12 +62,12 @@ describe('cli', function() {
     describe('Vm:', function() {
       it('Shutdown and start', function(done) {
         createVM(function() {
-		  var cmd = util.format('vm shutdown %s --json', vmName).split(' ');
-          testUtils.executeCommand( suite, retry, cmd, function(result) {
+          var cmd = util.format('vm shutdown %s --json', vmName).split(' ');
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             setTimeout(function() {
-			   cmd = util.format('vm start %s --json', vmName).split(' ');
-              testUtils.executeCommand( suite, retry, cmd, function(result) {
+              cmd = util.format('vm start %s --json', vmName).split(' ');
+              testUtils.executeCommand(suite, retry, cmd, function(result) {
                 result.exitStatus.should.equal(0);
                 done();
               });
@@ -78,8 +78,8 @@ describe('cli', function() {
 
       // VM Restart
       it('Restart', function(done) {
-	    cmd = util.format('vm restart  %s --json', vmName).split(' ');
-        testUtils.executeCommand( suite, retry, cmd, function(result) {
+        cmd = util.format('vm restart  %s --json', vmName).split(' ');
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
           result.exitStatus.should.equal(0);
           done();
         });
@@ -88,20 +88,20 @@ describe('cli', function() {
 
     function createVM(callback) {
       getImageName('Linux', function(imagename) {
-	    var cmd = util.format('vm create %s %s %s %s --json', vmName, imagename, username, password).split(' ');
-		cmd.push('-l');
-		cmd.push(location);
-        testUtils.executeCommand( suite, retry, cmd, function(result) {
-            result.exitStatus.should.equal(0);
-            setTimeout(callback, timeout);
-          });
+        var cmd = util.format('vm create %s %s %s %s --json', vmName, imagename, username, password).split(' ');
+        cmd.push('-l');
+        cmd.push(location);
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
+          result.exitStatus.should.equal(0);
+          setTimeout(callback, timeout);
+        });
       });
     }
 
     // Get name of an image of the given category
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
-      testUtils.executeCommand( suite, retry, cmd, function(result) {
+      testUtils.executeCommand(suite, retry, cmd, function(result) {
         result.exitStatus.should.equal(0);
         var imageList = JSON.parse(result.text);
         imageList.some(function(image) {
@@ -120,7 +120,7 @@ describe('cli', function() {
       else {
         var cmd = util.format('vm delete %s -b -q --json', vmName).split(' ');
         setTimeout(function() {
-          testUtils.executeCommand( suite, retry, cmd, function(result) {
+          testUtils.executeCommand(suite, retry, cmd, function(result) {
             result.exitStatus.should.equal(0);
             return callback();
           });

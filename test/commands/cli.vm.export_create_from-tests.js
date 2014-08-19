@@ -34,7 +34,8 @@ describe('cli', function() {
       timeout,
       username = 'azureuser',
       password = 'PassW0rd$',
-      file = 'vminfo.json', retry = 5;
+      file = 'vminfo.json',
+      retry = 5;
 
     var vmToUse = {
       Name: null,

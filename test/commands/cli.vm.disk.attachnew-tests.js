@@ -31,7 +31,8 @@ describe('cli', function() {
     var vmName,
       location,
       username = 'azureuser',
-      password = 'PassW0rd$', retry = 5;
+      password = 'PassW0rd$',
+      retry = 5;
 
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
@@ -97,17 +98,17 @@ describe('cli', function() {
     }
 
     function createVM(callback) {
-        getImageName('Linux', function(imagename) {
-          var cmd = util.format('vm create %s %s %s %s --json', vmName, imagename, username, password).split(' ');
-          cmd.push('-l');
-          cmd.push(location);
-          testUtils.executeCommand(suite, retry, cmd, function(result) {
-            result.exitStatus.should.equal(0);
-            setTimeout(callback, timeout);
-          });
+      getImageName('Linux', function(imagename) {
+        var cmd = util.format('vm create %s %s %s %s --json', vmName, imagename, username, password).split(' ');
+        cmd.push('-l');
+        cmd.push(location);
+        testUtils.executeCommand(suite, retry, cmd, function(result) {
+          result.exitStatus.should.equal(0);
+          setTimeout(callback, timeout);
         });
-      }
-      // Get name of an image of the given category
+      });
+    }
+    // Get name of an image of the given category
 
     function getImageName(category, callBack) {
       var cmd = util.format('vm image list --json').split(' ');
