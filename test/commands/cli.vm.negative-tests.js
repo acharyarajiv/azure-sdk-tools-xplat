@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 var should = require('should');
+var fs = require('fs');
 var CLITest = require('../framework/cli-test');
+var testUtils = require('../util/util');
 
 var suite;
 var testPrefix = 'cli.vm.negative-tests';
@@ -25,7 +27,7 @@ var requiredEnvironment = [{
 
 describe('cli', function() {
   describe('vm', function() {
-    var location;
+    var location, fileName = 'customdatalargefile';
     before(function(done) {
       suite = new CLITest(testPrefix, requiredEnvironment);
       suite.setupSuite(done);
@@ -86,7 +88,24 @@ describe('cli', function() {
             done();
           });
       });
+
     });
+    // Create VM with custom data with large file as customdata file
+    /* it('Negative testcase for custom data - Large File', function(done) {
+      var customVmName = 'xplatcustomvm';
+      var location = process.env.AZURE_VM_TEST_LOCATION || 'West US';
+      generateFile(fileName, 70000, null);
+      getImageName('Linux', function(ImageName) {
+        suite.execute('vm create %s %s "azureuser" "Pa$$word@123" -l %s -d %s --json -e',
+          customVmName, ImageName, location, fileName, function(result) {
+            result.exitStatus.should.equal(1);
+            result.errorText.should.include('--custom-data must be less then 64 KB');
+            fs.unlinkSync(fileName);
+            done();
+          });
+      });
+    }); */
+
 
     // Get name of an image of the given category
     function getImageName(category, callBack) {
@@ -105,6 +124,13 @@ describe('cli', function() {
           callBack(getImageName.imageName);
         });
       }
+    }
+
+    //create a file and write desired data given as input
+    function generateFile(filename, fileSizeinBytes, data) {
+      if (fileSizeinBytes)
+        data = testUtils.generateRandomString(fileSizeinBytes);
+      fs.writeFileSync(filename, data);
     }
   });
 });
